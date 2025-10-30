@@ -1,0 +1,8 @@
+﻿Timestamp: 2025-10-30T20:43:45.2319714+07:00
+LocalPath: C:\Users\ASUS\Desktop\time-series-forecasting
+RepoUrl: https://github.com/yirassssindaba-coder/Time-Series-Forecasting.git
+GitStatus:
+System.Collections.Hashtable.Output
+
+LastRemote:
+System.Collections.Hashtable.Output
