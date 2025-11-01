@@ -1,0 +1,305 @@
+﻿<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>YoY Standalone Editor — Edit / Hapus / Simpan CSV</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{ --bg:#f4f8ff; --muted:#6b7280; --accent:#6366f1 }
+    body{font-family:Inter,Arial;margin:18px;background:linear-gradient(180deg,#f8fbff,#f2f7ff);color:#071032}
+    .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.06);max-width:1100px;margin:0 auto}
+    .row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+    input,select,button{padding:8px;border-radius:8px;border:1px solid #e6edf7}
+    button.primary{background:#6366f1;color:#fff;border:none}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border:1px solid #eef2ff;text-align:left}
+    td.editable{background:#fff7e6}
+    .hint{font-size:13px;color:#6b7280}
+    .small-btn{padding:6px 8px;border-radius:6px}
+    .actions{width:160px;text-align:center}
+    @media(max-width:720px){ .row{flex-direction:column;align-items:stretch} }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>YoY Standalone Editor — Edit / Hapus / Simpan CSV</h2>
+    <p class="hint">Impor CSV (date,value) atau tambahkan data manual (Year, Value, Count). Setelah Generate, Anda dapat mengedit Year/Value/Count/Diff/% inline, menghapus baris, dan mengekspor seluruh tabel ke CSV.</p>
+
+    <div class="row">
+      <label>CSV: <input id="csvFile" type="file" accept=".csv" /></label>
+      <div style="display:flex;gap:8px;margin-left:8px">
+        <input id="yearInput" type="number" placeholder="Year" style="width:110px" />
+        <input id="valueInput" type="number" placeholder="Value" style="width:140px" />
+        <input id="countInput" type="number" placeholder="Count" style="width:100px" min="0" value="1" />
+        <button id="addBtn" class="small-btn">Add</button>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <label>From <input id="fromYear" type="number" value="2019" style="width:100px;margin-left:6px"/></label>
+        <label>To <input id="toYear" type="number" value="2024" style="width:100px;margin-left:6px"/></label>
+        <select id="aggMode" style="margin-left:6px"><option value="avg">AVG</option><option value="sum">SUM</option><option value="last">LAST</option></select>
+        <button id="generateBtn" class="small-btn">Generate</button>
+        <button id="saveCsvBtn" class="small-btn">Save CSV</button>
+        <button id="clearBtn" class="small-btn" style="background:#ef4444;color:#fff">Clear</button>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table id="dataTable"><thead><tr><th>Year</th><th>Value</th><th>Count</th><th>Diff</th><th>%</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div style="margin-top:18px"><canvas id="chart" width="1000" height="360" style="background:#fff;border-radius:6px"></canvas></div>
+  </div>
+
+<script>
+function parseCSV(text){
+  const lines = text.replace(/\r\n/g,"\\n").split("\\n").map(l=>l.trim()).filter(l=>l!=="");
+  if(!lines.length) return [];
+  const first = lines[0].split(",").map(s=>s.trim());
+  const header = first.some(h=>isNaN(parseInt(h,10)));
+  const rows = header ? lines.slice(1) : lines;
+  const out = [];
+  for(const r of rows){
+    const cols = r.split(",").map(c=>c.trim());
+    if(cols.length < 2) continue;
+    const y = parseInt(cols[0],10);
+    const v = cols[1]==='' ? null : parseFloat(cols[1]);
+    const c = cols.length > 2 ? (cols[2]===''?0:parseInt(cols[2],10)) : 1;
+    if(!isNaN(y)) out.push({year:y, value:(v===null||isNaN(v))? null : v, count: isNaN(c)? 0 : c});
+  }
+  return out;
+}
+function fmtNum(v){ return (v===null||v===undefined) ? "-" : Number(v).toLocaleString('en-US',{maximumFractionDigits:2}); }
+
+const csvFile = document.getElementById('csvFile');
+const addBtn = document.getElementById('addBtn');
+const yearInput = document.getElementById('yearInput');
+const valueInput = document.getElementById('valueInput');
+const countInput = document.getElementById('countInput');
+const fromYear = document.getElementById('fromYear');
+const toYear = document.getElementById('toYear');
+const aggMode = document.getElementById('aggMode');
+const generateBtn = document.getElementById('generateBtn');
+const saveCsvBtn = document.getElementById('saveCsvBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+const tbody = document.querySelector('#dataTable tbody');
+const chartEl = document.getElementById('chart');
+let chartInstance = null;
+let tableRows = []; // {year, value, count, diff, pct, manual}
+
+/* CSV import */
+csvFile.addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const r = new FileReader(); r.onload = ()=>{
+    const parsed = parseCSV(r.result);
+    const map = Object.fromEntries(tableRows.map(x=>[x.year, {value:x.value, count:x.count||0}]));
+    parsed.forEach(p=> map[p.year] = { value: p.value, count: p.count });
+    tableRows = Object.keys(map).map(k=>({year:parseInt(k,10), value: map[k].value, count: map[k].count || 0, diff:null, pct:null, manual:false}));
+    tableRows.sort((a,b)=>a.year-b.year);
+    renderTable();
+    recalcStandalone();
+  }; r.readAsText(f);
+});
+
+/* Add manual row (Year, Value, Count) */
+addBtn.addEventListener('click', ()=>{
+  const y = parseInt(yearInput.value,10);
+  const v = valueInput.value === '' ? null : parseFloat(valueInput.value);
+  const c = countInput.value === '' ? 0 : parseInt(countInput.value,10);
+  if(isNaN(y) || (v===null || isNaN(v)) || isNaN(c) || c < 0){ alert('Masukkan Year, Value, dan Count yang valid'); return; }
+  // replace existing year if present
+  tableRows = tableRows.filter(r=> r.year !== y);
+  tableRows.push({year: y, value: v, count: c, diff: null, pct: null, manual: false});
+  tableRows.sort((a,b)=> a.year - b.year);
+  renderTable();
+  recalcStandalone();
+  yearInput.value=''; valueInput.value=''; countInput.value='1';
+});
+
+/* Render table with Edit/Hapus and Count column editable when editing */
+function renderTable(){
+  tbody.innerHTML = '';
+  tableRows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.dataset.year = r.year;
+
+    const tdY = document.createElement('td'); tdY.className='year'; tdY.contentEditable='false'; tdY.innerText = r.year;
+    const tdV = document.createElement('td'); tdV.className='value'; tdV.contentEditable='false'; tdV.innerText = r.value===null? '' : r.value;
+    const tdC = document.createElement('td'); tdC.className='count'; tdC.contentEditable='false'; tdC.innerText = r.count===undefined? '' : String(r.count);
+    const tdCountInfo = tdC;
+    const tdCountHidden = null;
+
+    const tdCnt = tdC;
+    const tdDiff = document.createElement('td'); tdDiff.className='diff'; tdDiff.contentEditable='false'; tdDiff.innerText = r.diff===null? '-' : fmtNum(r.diff);
+    const tdPct = document.createElement('td'); tdPct.className='pct'; tdPct.contentEditable='false'; tdPct.innerText = r.pct===null? '-' : (r.pct.toFixed(2)+'%');
+
+    const tdAksi = document.createElement('td'); tdAksi.className='actions';
+    const editBtn = document.createElement('button'); editBtn.className='small-btn'; editBtn.innerText='Edit';
+    const delBtn = document.createElement('button'); delBtn.className='small-btn'; delBtn.innerText='Hapus'; delBtn.style.marginLeft='6px';
+
+    tdAksi.appendChild(editBtn); tdAksi.appendChild(delBtn);
+
+    // Edit toggle: enables editing Year, Value, Count, Diff, Pct
+    editBtn.addEventListener('click', ()=>{
+      const editing = tr.dataset.editing === 'true';
+      if(!editing){
+        tr.dataset.editing = 'true';
+        tr.dataset.origDiff = tdDiff.innerText;
+        tr.dataset.origPct = tdPct.innerText;
+        tdY.contentEditable='true'; tdV.contentEditable='true'; tdCnt.contentEditable='true'; tdDiff.contentEditable='true'; tdPct.contentEditable='true';
+        editBtn.innerText='Save';
+        tdV.focus();
+      } else {
+        // Save
+        tdY.contentEditable='false'; tdV.contentEditable='false'; tdCnt.contentEditable='false'; tdDiff.contentEditable='false'; tdPct.contentEditable='false';
+        // if diff/pct changed -> mark manual
+        if(tdDiff.innerText.trim() !== (tr.dataset.origDiff || '') || tdPct.innerText.trim() !== (tr.dataset.origPct || '')){
+          tr.dataset.manual = 'true';
+        }
+        delete tr.dataset.editing;
+        editBtn.innerText='Edit';
+        // update tableRows structure based on edited cells
+        const ny = parseInt(tdY.innerText.trim(),10);
+        const nv = tdV.innerText.trim() === '' ? null : parseFloat(tdV.innerText.trim());
+        const nc = tdCnt.innerText.trim() === '' ? 0 : parseInt(tdCnt.innerText.trim(),10);
+        // replace or update row in tableRows
+        tableRows = tableRows.filter(x=> x.year !== r.year && x.year !== ny); // remove old and any same-year duplicates
+        tableRows.push({ year: ny, value: nv, count: isNaN(nc)?0:nc, diff: tdDiff.innerText.trim() === '-' ? null : parseFloat(tdDiff.innerText.replace(/,/g,'')), pct: tdPct.innerText.trim().endsWith('%') ? parseFloat(tdPct.innerText.trim().replace('%','')) : (tdPct.innerText.trim()==='-'?null:parseFloat(tdPct.innerText)), manual: (tr.dataset.manual === 'true')});
+        tableRows.sort((a,b)=> a.year - b.year);
+        renderTable();
+        recalcStandalone();
+      }
+    });
+
+    delBtn.addEventListener('click', ()=>{
+      tableRows = tableRows.filter(x=> x.year !== r.year);
+      renderTable();
+      if(chartInstance) chartInstance.destroy();
+    });
+
+    tdY.addEventListener('blur', ()=> recalcStandalone());
+    tdV.addEventListener('blur', ()=> recalcStandalone());
+    tdCnt.addEventListener('blur', ()=> recalcStandalone());
+
+    tr.appendChild(tdY); tr.appendChild(tdV); tr.appendChild(tdCnt); tr.appendChild(tdDiff); tr.appendChild(tdPct); tr.appendChild(tdAksi);
+    tbody.appendChild(tr);
+  });
+}
+
+/* recalcStandalone: compute diffs/pct from current table rows, skip manual rows */
+function recalcStandalone(){
+  const trs = Array.from(tbody.querySelectorAll('tr'));
+  const rows = trs.map(tr=> {
+    const y = parseInt(tr.querySelector('.year').innerText.trim(),10);
+    const vtxt = tr.querySelector('.value').innerText.trim();
+    const v = vtxt === '' ? null : parseFloat(vtxt);
+    const ctxt = tr.querySelector('.count').innerText.trim();
+    const c = ctxt === '' ? 0 : parseInt(ctxt,10);
+    return { year: y, value: isNaN(v)? null : v, count: isNaN(c)? 0 : c, tr: tr };
+  }).filter(r=> !isNaN(r.year));
+  rows.sort((a,b)=> a.year - b.year);
+
+  // Update underlying tableRows array to reflect edited values and counts
+  tableRows = rows.map(r=> ({ year: r.year, value: r.value, count: r.count, diff: null, pct: null, manual: (r.tr.dataset.manual === 'true') }));
+
+  for(let i=0;i<rows.length;i++){
+    const cur = rows[i], prev = i>0?rows[i-1]:null;
+    const tr = cur.tr;
+    const diffCell = tr.querySelector('.diff');
+    const pctCell = tr.querySelector('.pct');
+    if(prev && cur.value != null && prev.value != null){
+      const diff = cur.value - prev.value;
+      const pct = prev.value !== 0 ? (diff/Math.abs(prev.value))*100 : null;
+      if(tr.dataset.manual !== 'true'){
+        diffCell.innerText = fmtNum(diff);
+        pctCell.innerText = pct===null? '-' : pct.toFixed(2) + '%';
+      }
+    } else {
+      if(tr.dataset.manual !== 'true'){
+        diffCell.innerText = '-';
+        pctCell.innerText = '-';
+      }
+    }
+  }
+  // update chart
+  const labels = tableRows.map(r=> String(r.year));
+  const data = tableRows.map(r=> r.value === null ? NaN : r.value);
+  if(chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(chartEl.getContext('2d'), { type:'line', data:{ labels, datasets:[{ label:'Value', data, borderColor:'rgba(99,102,241,1)', backgroundColor:'rgba(99,102,241,0.12)', fill:true }]}, options:{responsive:true, plugins:{legend:{display:false}}}});
+}
+
+/* Generate: compute results using logic similar to combined compute (but using tableRows header if available) */
+generateBtn.addEventListener('click', ()=>{
+  const from = parseInt(fromYear.value,10); const to = parseInt(toYear.value,10);
+  if(isNaN(from) || isNaN(to) || from>to){ alert('Rentang tahun tidak valid'); return; }
+  const agg = aggMode.value || 'avg';
+  // Build a map from current tableRows (including manual additions)
+  const map = Object.fromEntries(tableRows.map(r=>[r.year, { value: r.value, count: r.count || 0 }]));
+  const results = [];
+  for(let y=from;y<=to;y++){
+    const entry = map[y];
+    let vals = [];
+    let count = 0;
+    if(entry && entry.value != null){
+      if(agg === 'avg'){
+        if(entry.count && entry.count > 0){
+          vals = [entry.value / entry.count];
+          count = entry.count;
+        } else {
+          vals = [entry.value];
+          count = 1;
+        }
+      } else {
+        vals = [entry.value];
+        count = entry.count || 1;
+      }
+    } else {
+      vals = [];
+      count = 0;
+    }
+    let value = null;
+    if(vals.length === 0) value = null;
+    else if(agg==='sum') value = vals.reduce((a,b)=>a+b,0);
+    else if(agg==='last') value = vals[vals.length-1];
+    else value = vals.reduce((a,b)=>a+b,0)/vals.length;
+    results.push({ year: y, value: value, count: count });
+  }
+  for(let i=0;i<results.length;i++){
+    const cur = results[i], prev = i>0?results[i-1]:null;
+    if(prev && cur.value != null && prev.value != null){
+      cur.diff = cur.value - prev.value;
+      cur.pct = prev.value !== 0 ? (cur.diff/Math.abs(prev.value))*100 : null;
+    } else { cur.diff = null; cur.pct = null; }
+  }
+  // set tableRows and render
+  tableRows = results.map(r=>({ year: r.year, value: r.value, count: r.count, diff: r.diff, pct: r.pct, manual: false }));
+  renderTable();
+  recalcStandalone();
+});
+
+/* Save CSV - export current table rows */
+saveCsvBtn.addEventListener('click', ()=>{
+  const trs = Array.from(tbody.querySelectorAll('tr'));
+  if(!trs.length){ alert('No rows to export'); return; }
+  recalcStandalone();
+  const rows = [['Year','Value','Count','Diff','Pct']];
+  trs.forEach(tr=>{
+    const year = tr.querySelector('.year').innerText.trim();
+    const val = tr.querySelector('.value').innerText.trim();
+    const cnt = tr.querySelector('.count').innerText.trim();
+    const diff = tr.querySelector('.diff').innerText.trim();
+    const pct = tr.querySelector('.pct').innerText.trim();
+    rows.push([year, val, cnt, diff, pct]);
+  });
+  const csv = rows.map(r=> r.join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); const ts = new Date().toISOString().replace(/[:\-]/g,'').split('.')[0]; a.download = `yoy_standalone_${ts}.csv`; document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* Clear */
+clearBtn.addEventListener('click', ()=>{ if(confirm('Hapus semua baris?')){ tableRows = []; renderTable(); if(chartInstance) chartInstance.destroy(); } });
+
+renderTable();
+</script>
+</body>
+</html>
