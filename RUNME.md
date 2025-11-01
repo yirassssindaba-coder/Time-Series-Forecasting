@@ -1,126 +1,153 @@
-# Time Series Forecasting — Runme (gabungan README & petunjuk run script)
+# Time Series Forecasting — Quick Start
 
-Ringkasan:
-- File ini adalah dokumentasi gabungan: panduan UI YoY, contoh CSV, dan instruksi menjalankan skrip PowerShell `run_pipeline_complete_with_ui.ps1`.
-- Skrip PowerShell membuat folder hasil, menulis pipeline Python, menulis UI HTML interaktif (gabungan YoY + notebook preview), mengeksekusi pipeline (opsional), dan membuat ringkasan notebook (.ipynb).
+Ringkasan  
+Berisi panduan singkat untuk menjalankan skrip PowerShell `run_pipeline_complete_with_ui.ps1` yang akan:
+- Menulis pipeline Python (`pipeline_run.py`).
+- Menulis dua halaman HTML interaktif:
+  - `notebooks_html/report_combined_yoy_and_notebook.html` (gabungan image + YoY editor)
+  - `yoy_analysis_with_explanation.html` (YoY standalone editor)
+- Membuat struktur folder hasil (data, models, notebooks_html, results).
+- (Opsional) Menjalankan pipeline Python untuk mengunduh data dan menghasilkan laporan.
 
-## Konten yang dibuat oleh skrip
-- Folder default: `C:\Users\ASUS\Desktop\time-series-forecasting\hasil` (konfigurabel via param)
-- File Python pipeline: `pipeline_run.py` — men-download data (yfinance), preprocess, train model (LightGBM/RandomForest fallback), iterative forecast, menulis artifacts (CSV, model .pkl, report HTML, PNG).
-- File HTML interaktif: `yoy_analysis_with_explanation.html` — UI lengkap untuk:
-  - Unggah CSV (kolom date,value) atau input manual (tahun+nilai)
-  - Pilih granularitas, mode periode (full year / month-day range / template dates)
-  - Pilih kolom numeric (actual/forecast/y/value) — auto-detect jika kosong
-  - Pilih agregasi (SUM / AVG / LAST)
-  - Generate → Chart + Table + Penjelasan heuristik + Notebook preview
-  - Export hasil CSV dan Download .ipynb
-- Notebook hasil ringkasan: `TimeSeriesForecasting_results.ipynb`
-- Log run: `run_log.txt`
-- Direktori struktur:
+Lokasi default hasil
+- Default proyek: `C:\Users\<Anda>\Desktop\time-series-forecasting`
+- Folder hasil: `C:\Users\<Anda>\Desktop\time-series-forecasting\hasil`
+Anda dapat mengganti lokasi saat menjalankan skrip.
+
+Prerequisites
+- Windows / macOS / Linux dengan PowerShell (pwsh) atau Windows PowerShell.
+- Python 3.8+ tersedia di PATH.
+- Rekomendasi paket (jika ingin menjalankan pipeline Python):
+  - pandas, numpy, matplotlib, plotly, joblib, scikit-learn, lightgbm, yfinance, requests
+
+Instalasi paket Python (opsional — hanya bila ingin menjalankan pipeline)
+Buka terminal / PowerShell dan jalankan:
+```
+python -m pip install --upgrade pip
+python -m pip install pandas numpy matplotlib plotly joblib scikit-learn lightgbm yfinance requests
+```
+
+Menjalankan skrip PowerShell (menulis semua file)
+- Simpan file `run_pipeline_complete_with_ui.ps1` pada komputer Anda.
+- Jalankan:
+```
+pwsh -ExecutionPolicy Bypass -File .\run_pipeline_complete_with_ui.ps1
+```
+atau jika Anda tidak ingin pipeline Python dieksekusi otomatis:
+```
+pwsh -ExecutionPolicy Bypass -File .\run_pipeline_complete_with_ui.ps1 -RunNow:$false
+```
+- Jika Anda ingin menentukan folder proyek / hasil:
+```
+pwsh -ExecutionPolicy Bypass -File .\run_pipeline_complete_with_ui.ps1 -ProjectDir "C:\MyProject" -WorkingFolderName "hasil" -RunNow:$false
+```
+
+Apa yang dibuat skrip
+- pipeline_run.py — pipeline Python (download data, preprocess, train, forecast, output CSV + report).
+- notebooks_html/report_combined_yoy_and_notebook.html — halaman gabungan (image + YoY editor).
+- yoy_analysis_with_explanation.html — halaman YoY standalone.
+- Struktur folder:
   - data/raw
   - data/processed
   - models
-  - notebooks_html (temp/report)
-  - hasil (root artifacts)
+  - notebooks_html
+  - results
 
-## Cara menjalankan (PowerShell)
-1. Simpan skrip `run_pipeline_complete_with_ui.ps1` (yang Anda miliki) atau jalankan langsung:
-   - Di PowerShell (Run as Administrator jika perlu):
-     ```
-     powershell -ExecutionPolicy Bypass -File .\run_pipeline_complete_with_ui.ps1
-     ```
-   - Atau panggil dengan parameter kustom:
-     ```
-     .\run_pipeline_complete_with_ui.ps1 -ProjectDir "C:\MyProject" -WorkingFolderName "hasil" -RunNow:$true
-     ```
-2. Prasyarat:
-   - Python harus ada di PATH.
-   - Jika ada paket yang hilang, install:
-     ```
-     python -m pip install pandas numpy yfinance scikit-learn joblib plotly matplotlib jinja2 lightgbm
-     ```
-   - Skrip sudah berisi upaya instalasi ringan untuk `jinja2` (fallback).
+Membuka UI (direkomendasikan via HTTP lokal)
+- Untuk menghindari batasan browser membuka file lokal, jalankan server HTTP sederhana dari folder `hasil/notebooks_html`:
+```
+cd "C:\Users\<Anda>\Desktop\time-series-forecasting\hasil\notebooks_html"
+python -m http.server 8000
+```
+- Kemudian buka browser ke:
+```
+http://localhost:8000/report_combined_yoy_and_notebook.html
+```
+- Standalone YoY: buka file `hasil\yoy_analysis_with_explanation.html` langsung di browser atau dari folder hasil.
 
-3. Hasil:
-   - Buka `yoy_analysis_with_explanation.html` di folder `hasil` dengan browser (Chrome/Edge/Firefox).
-   - Jika `RunNow` true, skrip akan menjalankan `pipeline_run.py` dan menulis artifacts (processed CSV, forecast CSV, report HTML) ke folder hasil.
-
-## Panduan penggunaan UI (singkat & terurut)
-1. Siapkan file CSV minimal dengan header: `date,value`
+Petunjuk singkat penggunaan — Fokus: Analisis Perbandingan Waktu (YoY Editor)
+1. Siapkan CSV minimal (kolom `date` dan `value`). Format tanggal disarankan ISO: `YYYY-MM-DD`.
+   Contoh isi CSV:
    ```
    date,value
    2019-01-01,100
    2020-01-01,120
    2021-01-01,140
+   2022-01-01,150
+   2023-01-01,170
    ```
-2. Buka `yoy_analysis_with_explanation.html` di browser.
-3. Unggah CSV atau masukkan input manual (Tahun & Nilai → Tambah).
-4. Pilih granularitas (Tahunan/Kuartal/Bulanan/Harian).
-5. Pilih mode periode analisis:
-   - Seluruh tahun (1 Jan – 31 Dec)
-   - Rentang bulan-hari (MM-DD)
-   - Template tanggal (yyyy-mm-dd)
-6. Atur `yearFrom` & `yearTo`.
-7. Pilih kolom numeric (atau biarkan `Auto-detect`).
-8. Pilih metode agregasi: SUM / AVG / LAST.
-   - Rekomendasi:
-     - Harga saham: AVG atau LAST
-     - Volume / jumlah: SUM
-9. Klik **Generate** → lihat chart, tabel, dan penjelasan heuristik.
-10. Jika ingin menyimpan: klik **Export CSV** atau **Download .ipynb**.
+2. Buka halaman YoY editor (gabungan atau standalone).
+3. Unggah CSV lewat kontrol "CSV" atau tambahkan data manual per tahun:
+   - Masukkan Year, Value, Count lalu klik "Add" / "Tambah".
+   - Count berguna jika Anda memasukkan nilai agregat (mis. total) lalu ingin memakai AVG; aturan perhitungan:
+     - AVG: jika count>0, value_for_calc = value / count
+     - SUM: value_for_calc = value
+     - LAST: value_for_calc = value
+4. Pilih rentang tahun (From / To) dan mode agregasi (AVG / SUM / LAST).
+5. Klik "Generate" → tabel hasil + grafik akan muncul.
+6. Optional: edit sel (Year, Value, Count, Diff, %) inline dengan tombol Edit per baris. Jika Anda mengubah Diff/% secara manual, baris ditandai sebagai manual dan tidak akan dihitung ulang otomatis.
+7. Untuk menempelkan grafik ke gambar kiri (overlay):
+   - Pastikan ada gambar di panel kiri (upload PNG/JPG) — jika tidak ada, fitur Edit PNG akan membuat kanvas putih sebagai dasar.
+   - Klik "Edit PNG" pada panel kiri untuk menerapkan overlay.
+   - Gunakan "Save Edited" untuk mengunduh gambar hasil overlay.
+   - Gunakan "Revert" untuk mengembalikan gambar ke kondisi asli bila tersedia.
+8. Ekspor / Simpan:
+   - Export CSV / Save CSV: mengekspor tabel saat ini ke file CSV.
+   - Download .ipynb (jika tersedia) untuk ringkasan hasil.
 
-## Troubleshooting cepat
-- Hasil "-" atau kosong:
-  - Periksa format tanggal di CSV (gunakan `YYYY-MM-DD`).
+Contoh CSV cepat (siap disalin)
+```
+date,value
+2019-01-01,100
+2020-01-01,120
+2021-01-01,140
+2022-01-01,150
+2023-01-01,170
+```
+
+Troubleshooting singkat
+- "No image loaded." — upload file PNG/JPG di panel kiri.
+- Hasil kosong / tanda minus pada tabel:
+  - Pastikan format tanggal benar (YYYY-MM-DD disarankan).
   - Pastikan rentang tahun mencakup data Anda.
-  - Jika pakai forecast file, pastikan kolom forecast berisi angka.
-- Angka terlalu besar (mis. 18238.52 pada kasus harga):
-  - Periksa metode agregasi: `SUM` menjumlahkan nilai harian (bukan metrik umum untuk harga). Gunakan `AVG` atau `LAST`.
-- Parser kolom salah:
-  - Pastikan header file jelas: `date,value` atau `Date,y` (CSV dari pipeline `AAPL_parsed.csv` menggunakan `Date,y`).
+- Jika pipeline Python gagal:
+  - Cek apakah Python di PATH dan paket yang dibutuhkan terpasang.
+  - Jalankan `python pipeline_run.py` dari folder hasil untuk melihat pesan error lengkap.
 
-## Tips interpretasi penjelasan
-- Perubahan sangat besar (>50%) → periksa peristiwa/berita, promosi, split, atau anomali data.
-- Penurunan besar → periksa missing data, data truncation, atau event eksternal.
-- Tidak ada data di rentang → periksa coverage per tahun.
+Catatan teknis ringkas
+- Perubahan penting UI: menambahkan kolom Count yang bisa diedit inline; compute logic memperhitungkan Count untuk mode AVG.
+- Edit per baris yang mengubah Diff/% akan menandai baris sebagai manual sehingga tidak akan otomatis dihitung ulang.
+- Semua JavaScript UI, HTML dan pipeline Python ditulis oleh skrip PowerShell dan disimpan di folder hasil.
 
-## Pengembangan/Perbaikan UI (opsional teknis)
-- Jika ingin mengubah default agregasi di kode pipeline atau menambahkan pilihan kolom secara otomatis pada upload, edit `yoy_analysis_with_explanation.html` (JS bagian auto-detect column).
-- Untuk membuat UI otomatis memilih kolom `actual` vs `forecast`, saya rekomendasikan menambahkan parsing header CSV dan menampilkan dropdown nama semua kolom numeric yang ditemukan.
+Lisensi & Kontak
+- Sesuaikan lisensi sesuai kebutuhan proyek Anda.
+- Untuk bantuan lebih lanjut: sertakan screenshot atau lampirkan isi CSV yang dipakai agar saya bisa bantu debugging.
 
-## Catatan akhir
-- HTML yang dihasilkan bersifat "client-only" (JS + ChartJS) dan aman digunakan secara lokal — tidak mengirim data keluar browser.
-- Pipeline Python menulis artifacts yang kemudian bisa dibuka dengan UI untuk analisis tambahan.
+Terakhir: salin seluruh isi README ini dan simpan sebagai `README.md` di folder proyek Anda. Selamat mencoba!
 
----
+```
+<#
+run_pipeline_complete_with_ui.ps1 (v63 - full, complete assembly) with editable Count and full Add (Year/Value/Count) support
 
-## run_pipeline_complete_with_ui.ps1
-Berikut ini adalah isi lengkap `run_pipeline_complete_with_ui.ps1`. Skrip ini sudah disiapkan untuk ditaruh di dokumentasi sehingga Anda bisa menyalin langsung ke file `.ps1` dan menjalankannya.
-
-```powershell
-<# 
-run_pipeline_complete_with_ui.ps1
-
-This is an updated all-in-one PowerShell script based on the previous wrapper.
-What it does:
-- Creates project folder: C:\Users\ASUS\Desktop\time-series-forecasting\hasil (default; configurable)
-- Writes a robust Python pipeline (pipeline_run.py) into that folder (same behavior as before)
-- Writes an interactive HTML UI (yoy_analysis_with_explanation.html) into the hasil folder — this HTML contains date/time input controls, CSV/manual-data ingestion, computes YoY comparisons, and generates human-readable explanations client-side
-- Runs the Python pipeline (optional) and streams output to a resilient run_log file; filters noisy watchdog/browser lines
-- Builds a summary Jupyter notebook (TimeSeriesForecasting_results.ipynb) in the hasil folder after the run
-- All artifacts (reports, CSVs, model .pkl, notebook, UI) are placed inside the hasil folder
+What changed:
+- Both HTML pages (combined and standalone) now allow editing the Count column inline.
+- Added "Count" input next to the Add/Manual inputs so Add inserts Year, Value and Count.
+- Manual data is stored as { value, count } per year. compute functions treat manual entries as:
+    - AVG mode: value_for_calc = (count > 0) ? (value / count) : value
+    - SUM mode: value_for_calc = value
+    - LAST mode: value_for_calc = value
+  This keeps behavior consistent when user supplies aggregated values + counts.
+- Editing Count updates internal structures and immediately recalculates Diff/% and chart.
+- Edit per-row (existing) now allows editing Count as well; manual overrides for Diff/% are preserved as before.
+- All other behavior and layout unchanged.
 
 Usage:
-- Paste the entire script into PowerShell and press Enter, or save as run_pipeline_complete_with_ui.ps1 and run:
-    powershell -ExecutionPolicy Bypass -File .\run_pipeline_complete_with_ui.ps1
-- Ensure python is in PATH. If packages missing, install:
-    python -m pip install pandas numpy yfinance scikit-learn joblib plotly matplotlib jinja2 lightgbm
-
-You asked: "Maksudnya dikodekan di ps1 sebelumnya" — this script includes the HTML UI and writes it into the hasil folder so you can open it locally.
+  pwsh -ExecutionPolicy Bypass -File .\run_pipeline_complete_with_ui.ps1
+  pwsh -ExecutionPolicy Bypass -File .\run_pipeline_complete_with_ui.ps1 -RunNow:$false
 #>
 
 param(
-  [string] $ProjectDir = "C:\Users\ASUS\Desktop\time-series-forecasting",
+  [string] $ProjectDir = "$HOME\Desktop\time-series-forecasting",
   [string] $WorkingFolderName = "hasil",
   [switch] $RunNow = $true
 )
@@ -128,69 +155,59 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Open-LogStream {
-  param([string] $Path, [int] $Retries = 8, [int] $DelayMs = 200)
-  for ($i = 0; $i -lt $Retries; $i++) {
-    try {
-      $fs = [System.IO.File]::Open($Path,
-        [System.IO.FileMode]::OpenOrCreate,
-        [System.IO.FileAccess]::Write,
-        [System.IO.FileShare]::ReadWrite)
-      $fs.Seek(0, [System.IO.SeekOrigin]::End) | Out-Null
-      $sw = New-Object System.IO.StreamWriter($fs, [System.Text.Encoding]::UTF8)
-      $sw.AutoFlush = $true
-      return @{ StreamWriter=$sw; Path=$Path; IsFallback=$false }
-    } catch {
-      Start-Sleep -Milliseconds $DelayMs
-    }
+function Ensure-Dirs {
+  param([string]$Base)
+  if (-not (Test-Path -LiteralPath $Base)) { New-Item -ItemType Directory -Path $Base -Force | Out-Null }
+  $subs = @('data','data\raw','data\processed','models','notebooks_html','results')
+  foreach ($s in $subs) {
+    $p = Join-Path -Path $Base -ChildPath $s
+    if (-not (Test-Path -LiteralPath $p)) { New-Item -ItemType Directory -Path $p -Force | Out-Null }
   }
-  $dir = [System.IO.Path]::GetDirectoryName($Path)
-  if ([string]::IsNullOrEmpty($dir)) { $dir = (Get-Location).Path }
-  $timestamp = (Get-Date).ToString("yyyyMMddTHHmmss")
-  $fallback = [System.IO.Path]::Combine($dir, "run_log_$timestamp.txt")
-  $fs2 = [System.IO.File]::Open($fallback,
-    [System.IO.FileMode]::Create,
-    [System.IO.FileAccess]::Write,
-    [System.IO.FileShare]::ReadWrite)
-  $sw2 = New-Object System.IO.StreamWriter($fs2, [System.Text.Encoding]::UTF8)
-  $sw2.AutoFlush = $true
-  return @{ StreamWriter=$sw2; Path=$fallback; IsFallback=$true }
+}
+
+function Write-FileSafely {
+  param(
+    [Parameter(Mandatory=$true)][string] $Path,
+    [Parameter(Mandatory=$true)][string] $Content,
+    [string] $Encoding = "utf8"
+  )
+  $dir = Split-Path -Path $Path -Parent
+  if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+  Set-Content -LiteralPath $Path -Value $Content -Encoding $Encoding -Force
+  Write-Host "Wrote: $Path" -ForegroundColor Green
 }
 
 try {
-  $HasilDir = Join-Path $ProjectDir $WorkingFolderName
+  $HasilDir = Join-Path -Path $ProjectDir -ChildPath $WorkingFolderName
   Write-Host "ProjectDir: $ProjectDir"
   Write-Host "Working folder (hasil): $HasilDir"
-
-  # Create folder structure
-  New-Item -ItemType Directory -Path $HasilDir -Force | Out-Null
-  New-Item -ItemType Directory -Path (Join-Path $HasilDir "data\raw") -Force | Out-Null
-  New-Item -ItemType Directory -Path (Join-Path $HasilDir "data\processed") -Force | Out-Null
-  New-Item -ItemType Directory -Path (Join-Path $HasilDir "models") -Force | Out-Null
-  New-Item -ItemType Directory -Path (Join-Path $HasilDir "notebooks_html") -Force | Out-Null
-
-  # Check Python
-  if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Host "ERROR: 'python' not found in PATH. Activate Python environment or install Python." -ForegroundColor Red
-    return
-  }
+  Ensure-Dirs -Base $HasilDir
 
   # -----------------------
-  # Write pipeline_run.py
+  # pipeline_run.py (v42) - unchanged
   # -----------------------
   $pyPath = Join-Path $HasilDir "pipeline_run.py"
   $pyContent = @'
 #!/usr/bin/env python
 """
-pipeline_run.py (robust final)
+pipeline_run.py (v42)
 
-- Writes outputs into the folder where this script resides (script directory).
-- Imports pandas at module scope to avoid local pd binding issues.
-- Uses matplotlib for PNG exports (no browser/kaleido required).
-- Sanitizes feature names and handles MultiIndex from yfinance.
-- Writes processed CSV, forecast CSV, run_info JSON, model pickle, and HTML report.
+Robust local pipeline:
+- download_data (yfinance primary, local CSV fallback, Stooq fallback)
+- preprocess, feature creation
+- train model (LightGBM fallback RandomForest)
+- iterative forecast
+- save forecast CSV into results/, save Plotly HTML + PNG into notebooks_html/
+
+Fixes in v42:
+- generate_report_html_png uses the function parameter "ticker" (lowercase) instead of an undefined global TICKER.
+- Minor robustness around CSV writing and path creation.
 """
-import sys, json, traceback, re, warnings
+import sys
+import traceback
+import re
+import warnings
+import time
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -198,140 +215,118 @@ warnings.filterwarnings("ignore")
 
 import pandas as pd
 import numpy as np
-import yfinance as yf
 import joblib
-import plotly.io as pio
-import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.io as pio
 
-def pip_install(pkg):
-    try:
-        import subprocess, sys as _sys
-        subprocess.run([_sys.executable, "-m", "pip", "install", pkg], check=False,
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    except Exception:
-        pass
+try:
+    import yfinance as yf
+except Exception:
+    yf = None
 
-pip_install("jinja2")
+try:
+    import requests
+except Exception:
+    requests = None
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-ROOT = SCRIPT_DIR
+ROOT = Path(__file__).resolve().parent
 DATA_RAW = ROOT / "data" / "raw"
 DATA_PROC = ROOT / "data" / "processed"
 MODELS = ROOT / "models"
 REPORTS = ROOT / "notebooks_html"
-RESULTS = ROOT
-TEMPLATE = ROOT / "report_template.html"
+RESULTS = ROOT / "results"
+TIMESTAMP = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 for d in (DATA_RAW, DATA_PROC, MODELS, REPORTS, RESULTS):
     d.mkdir(parents=True, exist_ok=True)
-
-TIMESTAMP = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 def flatten_columns_if_multiindex(df):
     if isinstance(df.columns, pd.MultiIndex):
         cols = []
         for col in df.columns:
             parts = [str(x) for x in col if (x is not None and str(x) != "")]
-            name = "_".join(parts) if parts else str(col)
-            cols.append(name)
+            cols.append("_".join(parts) if parts else str(col))
         df.columns = cols
     return df
 
-def sanitize_feature_names(cols):
-    new = []
-    seen = {}
-    for c in cols:
-        s = re.sub(r"\W+", "_", str(c))
-        if s == "":
-            s = "col"
-        if re.match(r"^\d", s):
-            s = "_" + s
-        base = s
-        i = 1
-        while s in seen:
-            i += 1
-            s = f"{base}_{i}"
-        seen[s] = True
-        new.append(s)
-    return new
-
-def download_data(ticker, start, end, out_dir=DATA_RAW):
+def download_data(ticker, start, end, out_dir=DATA_RAW, max_retries=3):
     out_dir.mkdir(parents=True, exist_ok=True)
     p = out_dir / f"{ticker}.csv"
-    print(f"[download] {ticker} {start}..{end}")
-    df = yf.download(ticker, start=start, end=end, progress=False, auto_adjust=True)
-    if df is None or df.empty:
-        raise RuntimeError("yfinance returned empty data")
-    df = flatten_columns_if_multiindex(df)
-    df.to_csv(p, index=True)
-    return df, p
+    last_exc = None
+    if yf is not None:
+        attempt = 0
+        backoff = 1.0
+        while attempt < max_retries:
+            attempt += 1
+            try:
+                df = yf.download(ticker, start=start, end=end, progress=False, auto_adjust=True)
+                if df is None or df.empty:
+                    last_exc = RuntimeError("yfinance returned empty")
+                    time.sleep(backoff)
+                    backoff *= 2
+                    continue
+                df = flatten_columns_if_multiindex(df)
+                df.to_csv(p)
+                return df, p
+            except Exception as e:
+                last_exc = e
+                time.sleep(backoff)
+                backoff *= 2
+    # local fallback
+    for cand in [p, out_dir / f"{ticker.upper()}.csv", out_dir / f"{ticker.lower()}.csv"]:
+        if cand.exists():
+            try:
+                df = pd.read_csv(cand, index_col=0, parse_dates=True, engine="python")
+                if not df.empty:
+                    return df, cand
+            except Exception:
+                pass
+    # stooq fallback
+    if requests is not None:
+        try:
+            sym = ticker
+            if re.match(r"^[A-Z0-9]+$", ticker):
+                sym = f"{ticker.lower()}.us"
+            d1 = datetime.strptime(start, "%Y-%m-%d").strftime("%Y%m%d")
+            d2 = datetime.strptime(end, "%Y-%m-%d").strftime("%Y%m%d")
+            url = f"https://stooq.com/q/d/l/?s={sym}&d1={d1}&d2={d2}&i=d"
+            r = requests.get(url, timeout=20)
+            if r.status_code == 200 and r.text.strip():
+                p2 = out_dir / f"{ticker}_stooq.csv"
+                p2.write_text(r.text, encoding="utf-8")
+                df = pd.read_csv(p2, parse_dates=["Date"], index_col=0, engine="python")
+                if not df.empty:
+                    return df, p2
+        except Exception as e:
+            last_exc = e
+    raise RuntimeError(f"Failed to download data (last exception: {last_exc})")
 
 def preprocess(df_or_path, out_path):
     if isinstance(df_or_path, pd.DataFrame):
-        df_raw = df_or_path.copy()
+        df = df_or_path.copy()
     else:
-        df_raw = pd.read_csv(df_or_path, header=0, engine="python")
-    if df_raw.empty:
-        raise RuntimeError("Raw input empty")
-    df_raw = flatten_columns_if_multiindex(df_raw)
-
-    try:
-        idx = pd.to_datetime(df_raw.index, errors="coerce")
-        if idx.notna().sum() / max(1, len(idx)) > 0.5:
-            df_raw.index = idx
-        else:
-            date_col = None
-            for c in df_raw.columns:
-                if str(c).lower() in ("date","day","timestamp","ds"):
-                    date_col = c
-                    break
-            if date_col is not None:
-                df_raw[date_col] = pd.to_datetime(df_raw[date_col], errors="coerce")
-                df_raw = df_raw.loc[df_raw[date_col].notna()].copy()
-                df_raw.set_index(date_col, inplace=True)
-            else:
-                first_col = df_raw.columns[0]
-                parsed = pd.to_datetime(df_raw[first_col], errors="coerce")
-                if parsed.notna().sum() >= 1:
-                    df_raw[first_col] = parsed
-                    df_raw = df_raw.loc[parsed.notna()].copy()
-                    df_raw.set_index(first_col, inplace=True)
-    except Exception:
-        pass
-
-    numeric_cols = []
-    for c in df_raw.columns:
+        df = pd.read_csv(df_or_path, engine="python")
+    df = flatten_columns_if_multiindex(df)
+    numeric = []
+    for c in df.columns:
         try:
-            df_raw[c] = pd.to_numeric(df_raw[c], errors="coerce")
-            if df_raw[c].notna().sum() > 0:
-                numeric_cols.append(c)
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+            if df[c].notna().sum() > 0:
+                numeric.append(c)
         except Exception:
-            continue
-
-    preferred = None
+            pass
+    pref = None
     for cand in ("Close","close","Adj_Close","Adj Close","AdjClose"):
-        if cand in df_raw.columns:
-            preferred = cand
-            break
-    if preferred is None:
-        for c in df_raw.columns:
-            if re.search(r"(?i)\bclose\b", str(c)):
-                preferred = c
-                break
-
-    if not preferred:
-        if numeric_cols:
-            preferred = numeric_cols[0]
-            print(f"[preprocess] Warning: 'Close' not found. Using numeric column: {preferred}")
-        else:
-            raise RuntimeError("No numeric price column found")
-
-    s = df_raw[[preferred]].rename(columns={preferred: "y"}).sort_index()
+        if cand in df.columns:
+            pref = cand; break
+    if not pref and numeric:
+        pref = numeric[0]
+    if not pref:
+        raise RuntimeError("No numeric column found")
+    s = df[[pref]].rename(columns={pref:"y"}).sort_index()
     s.index = pd.to_datetime(s.index, errors="coerce")
     s = s.loc[s.index.notna()].copy()
-    if s.empty:
-        raise RuntimeError("After parsing dates, no valid rows remain")
     try:
         s = s.asfreq("D")
     except Exception:
@@ -344,135 +339,84 @@ def preprocess(df_or_path, out_path):
     s.to_csv(out_path)
     return s, out_path
 
-def create_features(df, lags=(1,2,3,7,14,30), windows=(3,7,14)):
+def create_features(df):
     out = df.copy()
-    for l in lags:
-        out[f"lag_{l}"] = out["y"].shift(l)
-    for w in windows:
-        out[f"roll_mean_{w}"] = out["y"].shift(1).rolling(w).mean()
-        out[f"roll_std_{w}"] = out["y"].shift(1).rolling(w).std()
+    out["lag_1"] = out["y"].shift(1)
+    out["lag_7"] = out["y"].shift(7)
+    out["roll_7"] = out["y"].shift(1).rolling(7).mean()
     return out
 
-def train_model_with_fallback(X, y):
-    original_cols = list(X.columns)
-    safe_cols = sanitize_feature_names(original_cols)
-    orig_to_safe = dict(zip(original_cols, safe_cols))
-    X_safe = X.copy()
-    X_safe.columns = safe_cols
+def train_simple(X, y):
     try:
         import lightgbm as lgb
-        print("[train] Trying LightGBM")
-        model = lgb.LGBMRegressor(n_estimators=200, learning_rate=0.05)
-        model.fit(X_safe, y)
-        meta = {"orig_to_safe": orig_to_safe, "safe_cols": safe_cols}
-        return model, "lightgbm", meta
+        model = lgb.LGBMRegressor(n_estimators=100)
+        model.fit(X, y)
+        return model, "lightgbm"
     except Exception:
         from sklearn.ensemble import RandomForestRegressor
-        model = RandomForestRegressor(n_estimators=200, random_state=42)
-        model.fit(X_safe, y)
-        meta = {"orig_to_safe": orig_to_safe, "safe_cols": safe_cols}
-        return model, "random_forest", meta
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X, y)
+        return model, "random_forest"
 
-def iterative_forecast(model, history_df, steps=30, meta=None):
+def iterative_forecast(model, history_df, steps=30):
     cur = history_df.copy().asfreq("D")
     preds = []
     for _ in range(steps):
-        feat = create_features(cur).iloc[[-1]].drop(columns=["y"], errors="ignore")
-        if meta and "orig_to_safe" in meta:
-            feat = feat.rename(columns=meta["orig_to_safe"])
-            safe_cols = meta.get("safe_cols", list(feat.columns))
-            for c in safe_cols:
-                if c not in feat.columns:
-                    feat[c] = 0.0
-            feat = feat.loc[:, safe_cols]
-        feat = feat.fillna(method="ffill").fillna(method="bfill").fillna(0)
+        feat = create_features(cur).iloc[[-1]].drop(columns=["y"], errors="ignore").fillna(0)
         try:
             p = float(model.predict(feat)[0])
         except Exception:
             p = float(model.predict(feat.values)[0])
-        next_date = cur.index[-1] + pd.Timedelta(days=1)
-        preds.append((next_date, p))
-        cur.loc[next_date] = [p]
-    return pd.DataFrame({"forecast": [v for (_, v) in preds]}, index=[d for (d, _) in preds])
+        nxt = cur.index[-1] + pd.Timedelta(days=1)
+        preds.append((nxt, p))
+        cur.loc[nxt] = [p]
+    return pd.DataFrame({"forecast":[v for (_,v) in preds]}, index=[d for (d,_) in preds])
 
-def generate_report(fig, run_info, out_path, series=None, fc=None):
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        pio.write_html(fig, file=str(out_path), include_plotlyjs="cdn", full_html=True)
-        print("[report] HTML written:", out_path)
-    except Exception:
-        print("[report] HTML write skipped")
-    png_path = out_path.with_suffix(".png")
+def generate_report_html_png(series, fc, ticker):
+    """
+    Generate a Plotly HTML report and a PNG snapshot.
+    IMPORTANT: use 'ticker' parameter (lowercase) to avoid NameError.
+    """
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=series.index, y=series["y"], name="Actual", line=dict(color="black")))
+    fig.add_trace(go.Scatter(x=fc.index, y=fc["forecast"], name="Forecast", line=dict(color="red")))
+    fig.update_layout(title=f"{ticker} Actual vs Forecast", xaxis_title="Date", yaxis_title="Price", height=600)
+    out_html = REPORTS / f"report_{ticker}_{TIMESTAMP}.html"
+    pio.write_html(fig, file=str(out_html), include_plotlyjs="cdn", full_html=True)
+    out_png = out_html.with_suffix(".png")
     try:
         plt.figure(figsize=(10,6))
-        if series is not None:
-            try:
-                plt.plot(series.index, series["y"], label="Actual", color="black")
-            except Exception:
-                pass
-        if fc is not None:
-            try:
-                plt.plot(fc.index, fc["forecast"], label="Forecast", color="red")
-            except Exception:
-                pass
+        plt.plot(series.index, series["y"], color="black", label="Actual")
+        plt.plot(fc.index, fc["forecast"], color="red", label="Forecast")
         plt.legend()
-        plt.title("Forecast {}".format(run_info.get("ticker","")))
+        plt.title(f"{ticker} Actual vs Forecast")
         plt.tight_layout()
-        plt.savefig(str(png_path))
+        plt.savefig(str(out_png))
         plt.close()
-        print("[report] PNG written with matplotlib:", png_path)
     except Exception:
-        print("[report] PNG (matplotlib) skipped")
+        pass
+    return out_html, out_png
 
 def main():
     try:
-        print("Pipeline started. TIMESTAMP=", TIMESTAMP)
-        TICKER = "AAPL"
-        START = "2015-01-01"
-        END = "2024-01-01"
-        HORIZON = 30
-
+        TICKER="AAPL"; START="2015-01-01"; END="2024-01-01"; HORIZON=30
         df_raw, raw_path = download_data(TICKER, START, END)
         processed_df, processed_path = preprocess(df_raw, DATA_PROC / f"{TICKER}_parsed.csv")
-        print("[main] Processed CSV written to:", processed_path)
-
         series = processed_df.copy()
-        try:
-            series = series.asfreq("D")
-        except Exception:
-            dr = pd.date_range(start=series.index.min(), end=series.index.max(), freq="D")
-            series = series.reindex(dr)
-        series["y"] = series["y"].ffill()
-
         df_feat = create_features(series).dropna()
-        if df_feat.empty:
-            raise RuntimeError("Not enough data after feature creation to train a model.")
-        X = df_feat.drop(columns=["y"])
-        y = df_feat["y"]
-        model, model_name, meta = train_model_with_fallback(X, y)
-        model_file = MODELS / f"{model_name}_{TICKER}_final_{TIMESTAMP}.pkl"
-        joblib.dump({"model": model, "meta": meta}, model_file)
-        print("[main] Model saved:", model_file)
+        X = df_feat.drop(columns=["y"]); y = df_feat["y"]
+        model, model_name = train_simple(X, y)
+        joblib.dump({"model":model, "meta":{"model_name":model_name}}, MODELS / f"{model_name}_{TICKER}_{TIMESTAMP}.pkl")
+        fc = iterative_forecast(model, series, steps=HORIZON)
 
-        fc = iterative_forecast(model, series, steps=HORIZON, meta=meta)
-        forecast_path = RESULTS / f"{TICKER}_forecast_{TIMESTAMP}.csv"
+        RESULTS.mkdir(parents=True, exist_ok=True)
+        forecast_csv_path = RESULTS / f"{TICKER}_forecast_{TIMESTAMP}.csv"
         combined = pd.concat([series.rename(columns={"y":"actual"}), fc], axis=0)
-        combined.to_csv(forecast_path)
-        print(f"[main] Forecast saved: {forecast_path}")
+        forecast_csv_path.write_text(combined.to_csv())
+        print(f"[main] Forecast saved: {forecast_csv_path}")
 
-        run_info = {"ticker": TICKER, "start": START, "end": END, "horizon": HORIZON, "model_used": model_name, "timestamp": TIMESTAMP}
-        run_info_path = RESULTS / f"run_info_{TIMESTAMP}.json"
-        run_info_path.write_text(json.dumps(run_info, indent=2))
-        print("[main] Run info saved:", run_info_path)
-
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=series.index, y=series["y"], name="Actual", line=dict(color="black")))
-        fig.add_trace(go.Scatter(x=fc.index, y=fc["forecast"], name="Forecast", line=dict(color="red")))
-        fig.update_layout(title=f"{TICKER} Actual vs Forecast", xaxis_title="Date", yaxis_title="Price", height=600)
-        report_path = REPORTS / f"report_{TICKER}_{TIMESTAMP}.html"
-        generate_report(fig, run_info, report_path, series=series, fc=fc)
-
-        print("=== Done ===")
+        html, png = generate_report_html_png(series, fc, TICKER)
+        print("Generated report:", html, png)
     except Exception as e:
         print("Pipeline failed:", e)
         traceback.print_exc()
@@ -481,1155 +425,950 @@ def main():
 if __name__ == "__main__":
     main()
 '@
-
-  Set-Content -LiteralPath $pyPath -Value $pyContent -Encoding UTF8
-  Write-Host "Wrote pipeline_run.py to: $pyPath" -ForegroundColor Green
+  Write-FileSafely -Path $pyPath -Content $pyContent -Encoding "utf8"
 
   # -----------------------
-  # Write HTML UI file (date/time inputs + YoY explanation) into hasil
+  # Combined UI (report_combined_yoy_and_notebook.html) - UPDATED: Count editable and Add Count input
   # -----------------------
-  $htmlPath = Join-Path $HasilDir "yoy_analysis_with_explanation.html"
-  $htmlContent = @'
+  $combinedPath = Join-Path -Path $HasilDir -ChildPath "notebooks_html/report_combined_yoy_and_notebook.html"
+  $combinedContent = @'
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Analisis YoY dengan Penjelasan Otomatis</title>
-  <style>
-    body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:18px; color:#111 }
-    h1 { margin-top:0 }
-    .wrap { display:grid; grid-template-columns: 420px 1fr; gap:18px; align-items:start; }
-    .card { padding:12px; border:1px solid #e6eef8; border-radius:8px; background:white }
-    label{display:block;margin-top:10px;font-weight:600;font-size:13px}
-    input, select, button, textarea { width:100%; padding:8px; margin-top:6px; border:1px solid #d1d9e6; border-radius:6px }
-    .controls-row { display:flex; gap:8px }
-    .small { width:auto; padding:6px 8px; font-size:13px }
-    .button { background:#2563eb;color:white;border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:600 }
-    .muted { color:#666; font-size:13px }
-    .chart-wrap{height:260px}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
-    th{background:#fafafa;font-weight:700}
-    .explain{margin-top:12px;padding:12px;border-radius:8px;background:#f8fafc;border:1px solid #e6eef8}
-    pre { white-space:pre-wrap; word-break:break-word; background:#0b1220; color:#e6eef8; padding:12px; border-radius:6px; overflow:auto }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-  <h1>Analisis Perbandingan Waktu & Penjelasan Otomatis</h1>
-  <p class="muted">Masukkan data (CSV: kolom tanggal & nilai) atau gunakan manual input. Pilih periode/waktu yang ingin dibandingkan. Klik "Generate" untuk melihat perbedaan dan penjelasan mengapa perubahan itu terjadi (heuristik dijelaskan di bawah).</p>
-
-  <div class="wrap">
-    <div class="card">
-      <h3>Sumber Data</h3>
-      <label>Unggah CSV (kolom: date,value)</label>
-      <input type="file" id="csvFile" accept=".csv" />
-      <div class="muted">Tanggal bisa dalam format ISO, yyyy-mm-dd, dd/mm/yyyy, atau mm/dd/yyyy.</div>
-
-      <label>Atau input manual (tahun & nilai)</label>
-      <div style="display:flex; gap:8px; margin-top:6px">
-        <input type="number" id="manualYear" placeholder="Tahun" />
-        <input type="number" id="manualValue" placeholder="Nilai" />
-        <button id="addManualBtn" class="small">Tambah</button>
-      </div>
-      <table id="manualTable" style="display:none;margin-top:10px">
-        <thead><tr><th>Tahun</th><th>Nilai</th><th>Aksi</th></tr></thead>
-        <tbody></tbody>
-      </table>
-
-      <hr style="margin:12px 0;border:none;height:1px;background:#eef2f6" />
-
-      <h3>Pengaturan Periode/Waktu</h3>
-      <label>Granularitas waktu</label>
-      <select id="granularity">
-        <option value="year">Tahunan (total/avg per tahun)</option>
-        <option value="quarter">Kuartal (Q1,Q2...)</option>
-        <option value="month">Bulanan</option>
-        <option value="day">Harian</option>
-      </select>
-
-      <label>Mode periode analisis</label>
-      <select id="periodMode">
-        <option value="fullYear">Seluruh tahun (1 Jan - 31 Dec)</option>
-        <option value="monthDayRange">Rentang bulan-hari (contoh 03-01 sampai 04-30)</option>
-        <option value="customDates">Template tanggal (pilih tanggal awal & akhir)</option>
-      </select>
-
-      <div id="monthDayRange" style="display:none">
-        <label>Mulai (MM-DD)</label><input placeholder="01-01" id="startMMDD" />
-        <label>Selesai (MM-DD)</label><input placeholder="12-31" id="endMMDD" />
-      </div>
-
-      <div id="customDateRange" style="display:none">
-        <label>Template Mulai (yyyy-mm-dd)</label><input type="date" id="startTemplate" />
-        <label>Template Selesai (yyyy-mm-dd)</label><input type="date" id="endTemplate" />
-      </div>
-
-      <label>Rentang tahun</label>
-      <div style="display:flex; gap:8px">
-        <input type="number" id="yearFrom" value="2019" class="small" />
-        <input type="number" id="yearTo" value="2024" class="small" />
-      </div>
-
-      <div style="margin-top:12px; display:flex; gap:8px">
-        <button id="generateBtn" class="button">Generate</button>
-        <button id="explainBtn" class="small">Jelaskan (lanjutan)</button>
-        <button id="downloadIpynb" class="small">Download .ipynb</button>
-      </div>
-
-      <div style="margin-top:12px" class="muted">
-        Penjelasan yang dihasilkan bersifat heuristik: mengidentifikasi trend, seasonality, outlier, missing data, serta perubahan struktural (sketsa alasannya).
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Hasil</h3>
-      <div class="chart-wrap"><canvas id="chart" height="240"></canvas></div>
-
-      <table id="resultTable" style="display:none">
-        <thead><tr><th>Periode</th><th>Nilai</th><th>Selisih (vs prev)</th><th>Perubahan %</th></tr></thead>
-        <tbody></tbody>
-      </table>
-
-      <div class="explain" id="explanation" style="display:none"></div>
-
-      <div style="margin-top:8px;">
-        <button id="exportCsv" class="small">Export Hasil CSV</button>
-      </div>
-
-      <div id="messages" class="muted" style="margin-top:8px"></div>
-    </div>
-  </div>
-
-<script>
-/* Utility & parsing */
-function parseCSV(text) {
-  const lines = text.replace(/\r\n/g,"\n").split("\n").filter(l=>l.trim()!=="");
-  if (lines.length===0) return {header:[],rows:[]};
-  const header = lines[0].split(",").map(h=>h.trim());
-  const rows = lines.slice(1).map(l => l.split(",").map(c=>c.trim()));
-  return {header, rows};
-}
-function toDate(s){
-  if(!s) return null;
-  let d = Date.parse(s);
-  if(!isNaN(d)) return new Date(d);
-  const m = s.match(/^(\d{1,2})[\/\-\.\s](\d{1,2})[\/\-\.\s](\d{2,4})$/);
-  if(m){
-    let day=parseInt(m[1],10), mon=parseInt(m[2],10)-1, year=parseInt(m[3],10); if(year<100) year+=2000;
-    return new Date(year,mon,day);
-  }
-  return null;
-}
-
-/* State */
-let rawData = []; // {date:Date, value:Number}
-let manualData = {}; // {year: value}
-
-/* Elements */
-const csvFile = document.getElementById('csvFile');
-const addManualBtn = document.getElementById('addManualBtn');
-const manualYear = document.getElementById('manualYear');
-const manualValue = document.getElementById('manualValue');
-const manualTable = document.querySelector('#manualTable tbody');
-const manualTableWrap = document.getElementById('manualTable');
-const periodMode = document.getElementById('periodMode');
-const monthDayRange = document.getElementById('monthDayRange');
-const customDateRange = document.getElementById('customDateRange');
-const startMMDD = document.getElementById('startMMDD');
-const endMMDD = document.getElementById('endMMDD');
-const startTemplate = document.getElementById('startTemplate');
-const endTemplate = document.getElementById('endTemplate');
-const yearFrom = document.getElementById('yearFrom');
-const yearTo = document.getElementById('yearTo');
-const generateBtn = document.getElementById('generateBtn');
-const explainBtn = document.getElementById('explainBtn');
-const exportCsv = document.getElementById('exportCsv');
-const downloadIpynb = document.getElementById('downloadIpynb');
-const chartCanvas = document.getElementById('chart');
-const resultTable = document.getElementById('resultTable');
-const resultTbody = resultTable.querySelector('tbody');
-const explanationDiv = document.getElementById('explanation');
-const messages = document.getElementById('messages');
-let chart=null;
-
-/* CSV upload handling */
-csvFile.addEventListener('change', e=>{
-  const f = e.target.files[0];
-  if(!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    const parsed = parseCSV(r.result);
-    const {header, rows} = parsed;
-    let dateIdx=-1, valIdx=-1;
-    for(let i=0;i<header.length;i++){
-      let dateCount=0, numCount=0;
-      for(let j=0;j<Math.min(rows.length,20);j++){
-        const v=rows[j][i]||"";
-        if(toDate(v)) dateCount++;
-        if(!isNaN(parseFloat(v)) && v!=="") numCount++;
-      }
-      if(dateCount >= Math.max(1, Math.floor(rows.length*0.3))) dateIdx=i;
-      if(numCount >= Math.max(1, Math.floor(rows.length*0.3))) valIdx=i;
-    }
-    if(dateIdx===-1) dateIdx=0;
-    if(valIdx===-1) valIdx=(header.length>1?1:0);
-    rawData=[];
-    rows.forEach(rw=>{
-      const d = toDate(rw[dateIdx]);
-      const v = parseFloat(rw[valIdx]);
-      if(d && !isNaN(v)) rawData.push({date:d, value:v});
-    });
-    messages.textContent = `CSV loaded: ${rawData.length} baris valid (date col=${header[dateIdx]||dateIdx}, value col=${header[valIdx]||valIdx})`;
-  };
-  r.readAsText(f);
-});
-
-/* Manual input */
-addManualBtn.addEventListener('click', ()=>{
-  const y = parseInt(manualYear.value,10);
-  const v = parseFloat(manualValue.value);
-  if(!y || isNaN(v)){ alert('Masukkan tahun & nilai valid'); return; }
-  manualData[y]=v;
-  renderManualTable();
-  manualYear.value=""; manualValue.value="";
-});
-function renderManualTable(){
-  manualTable.innerHTML="";
-  const yrs = Object.keys(manualData).map(x=>parseInt(x,10)).sort((a,b)=>a-b);
-  if(yrs.length){
-    manualTableWrap.style.display="";
-    yrs.forEach(y=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML = `<td>${y}</td><td>${manualData[y]}</td><td><button class="small" data-year="${y}">Hapus</button></td>`;
-      manualTable.appendChild(tr);
-    });
-    manualTable.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', e=>{
-      const y = e.target.getAttribute('data-year');
-      delete manualData[y];
-      renderManualTable();
-    }));
-  } else { manualTableWrap.style.display="none"; }
-}
-
-/* Period UI change */
-periodMode.addEventListener('change', ()=>{
-  const v=periodMode.value;
-  monthDayRange.style.display = (v==='monthDayRange') ? 'block' : 'none';
-  customDateRange.style.display = (v==='customDates') ? 'block' : 'none';
-});
-
-/* Aggregation + explanation heuristics */
-function aggregateAndExplain(){
-  // build per-year aggregates according to mode; prefer CSV rawData, else manualData
-  const useManual = (Object.keys(manualData).length>0 && rawData.length===0);
-  const fromYear = parseInt(yearFrom.value,10), toYear = parseInt(yearTo.value,10);
-  if(isNaN(fromYear) || isNaN(toYear) || fromYear>toYear){ alert('Rentang tahun tidak valid'); return; }
-  let results = [];
-  if(useManual){
-    for(let y=fromYear;y<=toYear;y++){
-      const val = manualData[y] !== undefined ? manualData[y] : null;
-      results.push({period: String(y), value: val});
-    }
-  } else {
-    // rawData -> filter by each year's template
-    const mode = periodMode.value;
-    for(let y=fromYear; y<=toYear; y++){
-      let start, end;
-      if(mode==='fullYear'){
-        start = new Date(y,0,1); end = new Date(y,11,31,23,59,59);
-      } else if(mode==='monthDayRange'){
-        const s = startMMDD.value || startMMDD.placeholder || '01-01';
-        const e = endMMDD.value || endMMDD.placeholder || '12-31';
-        const sp = s.split('-'); const ep = e.split('-');
-        start = new Date(y, parseInt(sp[0],10)-1, parseInt(sp[1],10));
-        end = new Date(y, parseInt(ep[0],10)-1, parseInt(ep[1],10),23,59,59);
-      } else if(mode==='customDates'){
-        const st = startTemplate.value; const en = endTemplate.value;
-        if(!st || !en){ messages.textContent = 'Pilih template tanggal untuk mode customDates.'; return; }
-        const sdate = new Date(st); const edate = new Date(en);
-        start = new Date(y, sdate.getMonth(), sdate.getDate());
-        end = new Date(y, edate.getMonth(), edate.getDate(),23,59,59);
-      } else {
-        start = new Date(y,0,1); end = new Date(y,11,31,23,59,59);
-      }
-      const slice = rawData.filter(r => r.date >= start && r.date <= end);
-      const sum = slice.reduce((acc,it)=>acc + (isFinite(it.value)?it.value:0), 0);
-      const avg = slice.length? (sum / slice.length) : null;
-      // we present "value" as sum by default; if you want avg, change logic or add UI
-      results.push({period: String(y), value: slice.length? sum : null, count: slice.length, avg: avg});
-    }
-  }
-
-  // compute diffs and percent changes
-  for(let i=0;i<results.length;i++){
-    const cur = results[i];
-    const prev = i>0 ? results[i-1] : null;
-    if(prev && cur.value !== null && prev.value !== null){
-      cur.diff = cur.value - prev.value;
-      cur.pct = prev.value !== 0 ? (cur.diff / Math.abs(prev.value) * 100) : null;
-    } else {
-      cur.diff = null; cur.pct = null;
-    }
-  }
-
-  // Render table and chart
-  resultTbody.innerHTML = "";
-  const labels = []; const dataVals = [];
-  results.forEach(r=>{
-    const tr=document.createElement('tr');
-    const diff = r.diff === null ? "-" : r.diff.toFixed(2);
-    const pct = r.pct === null ? "-" : r.pct.toFixed(2) + "%";
-    tr.innerHTML = `<td>${r.period}</td><td>${r.value===null? "-": r.value.toFixed(2)}</td><td>${diff}</td><td>${pct}</td>`;
-    resultTbody.appendChild(tr);
-    labels.push(r.period);
-    dataVals.push(r.value===null?0:r.value);
-  });
-  resultTable.style.display="table";
-
-  if(chart) chart.destroy();
-  const ctx = chartCanvas.getContext('2d');
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Value', data: dataVals, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.08)', tension:0.2 }] },
-    options: { responsive:true, scales:{ y:{ beginAtZero:false } } }
-  });
-
-  // Explanation heuristics (simple, human-readable)
-  let explanation = "";
-  for(let i=0;i<results.length;i++){
-    const r = results[i];
-    if(i===0){
-      explanation += `<strong>${r.period}:</strong> value = ${r.value===null? "tidak tersedia": r.value.toFixed(2)}. (Basis awal)\n\n`;
-      continue;
-    }
-    if(r.value === null){
-      explanation += `<strong>${r.period}:</strong> data tidak tersedia untuk periode ini.\n\n`;
-      continue;
-    }
-    const prev = results[i-1];
-    if(prev.value === null){
-      explanation += `<strong>${r.period}:</strong> ada nilai ${r.value.toFixed(2)} tetapi tahun sebelumnya tidak tersedia untuk perbandingan.\n\n`;
-      continue;
-    }
-    const diff = r.value - prev.value;
-    const pct = prev.value !== 0 ? (diff / Math.abs(prev.value) * 100) : null;
-    // heuristic classification
-    let reason = [];
-    if(Math.abs(diff) < Math.abs(prev.value) * 0.01) reason.push("Tidak ada perubahan signifikan (±1%)");
-    if(pct !== null && pct > 50) reason.push("Peningkatan besar — mungkin ada peristiwa pasar, pengumuman, atau perubahan musiman");
-    if(pct !== null && pct < -50) reason.push("Penurunan besar — cek anomali, kehilangan data, atau peristiwa negatif");
-    if(r.count !== undefined && r.count === 0) reason.push("Tidak ada data di rentang yang dipilih (0 baris)");
-    if(reason.length===0) reason.push("Perubahan moderat; bisa disebabkan kombinasi trend + seasonality + volatilitas");
-    explanation += `<strong>${r.period} vs ${prev.period}:</strong> nilai ${r.value.toFixed(2)} (selisih ${diff.toFixed(2)}${pct!==null? ", " + pct.toFixed(2) + "%": ""}). Alasan: ${reason.join("; ")}.\n\n`;
-  }
-
-  explanationDiv.style.display="";
-  explanationDiv.innerHTML = "<pre>"+explanation+"</pre>";
-  messages.textContent = "Analisis selesai.";
-}
-
-/* Export CSV of results (simple) */
-exportCsv.addEventListener('click', ()=>{
-  // build CSV from table
-  const rows = [["Period","Value","Diff","Pct"]];
-  resultTbody.querySelectorAll('tr').forEach(tr=>{
-    const tds = tr.querySelectorAll('td');
-    rows.push([tds[0].innerText, tds[1].innerText, tds[2].innerText, tds[3].innerText]);
-  });
-  const csv = rows.map(r => r.join(",")).join("\n");
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-  a.download = "yoy_results.csv";
-  document.body.appendChild(a); a.click(); a.remove();
-});
-
-/* Generate / Explain button */
-generateBtn.addEventListener('click', ()=> {
-  aggregateAndExplain();
-});
-
-/* Explain (expanded): simple heuristics + tips */
-explainBtn.addEventListener('click', ()=>{
-  // Provide additional explanation tips based on displayed explanation
-  const tips = `Tips pemeriksaan lanjutan:
-- Periksa apakah ada outlier (hari nilai ekstrem) di data mentah.
-- Periksa apakah ada perubahan definisi/metrik antar tahun.
-- Cek volume (jumlah bar) di tiap tahun; 0 bar berarti rentang kosong.
-- Periksa berita/kejadian pada periode dengan perubahan besar (earnings, regulation, holidays).`;
-  alert(tips);
-});
-
-/* Download minimal .ipynb (summary) */
-downloadIpynb.addEventListener('click', ()=>{
-  // Build a small notebook with the explanation + table as plaintext outputs
-  const mdTitle = "# YoY Analysis Results\nGenerated by local UI\n\n";
-  const explanationText = explanationDiv.innerText || "No explanation generated yet.";
-  const processed = resultTbody.innerText || "No results.";
-  const nb = {
-    nbformat:4, nbformat_minor:5,
-    metadata: { kernelspec:{ name:"python3", display_name:"Python 3" }, language_info:{ name:"python" } },
-    cells: [
-      { cell_type: "markdown", metadata:{}, source: [mdTitle] },
-      { cell_type: "code", metadata:{}, execution_count:null, source:["# Explanation\n"], outputs:[ { output_type:"execute_result", data:{ "text/plain": [explanationText] }, metadata:{}, execution_count:1 } ] },
-      { cell_type: "code", metadata:{}, execution_count:null, source:["# Results table\n"], outputs:[ { output_type:"execute_result", data:{ "text/plain": [processed] }, metadata:{}, execution_count:1 } ] }
-    ]
-  };
-  const blob = new Blob([JSON.stringify(nb, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = "TimeSeries_YoY_results.ipynb";
-  document.body.appendChild(a); a.click(); a.remove();
-});
-
-/* initial UI */
-renderManualTable();
-
-</script>
-</body>
-</html>
-'@
-
-  Set-Content -LiteralPath $htmlPath -Value $htmlContent -Encoding UTF8
-  Write-Host "Wrote HTML UI: $htmlPath" -ForegroundColor Green
-
-  # -----------------------
-  # Execute pipeline_run.py (optional)
-  # -----------------------
-  if ($RunNow) {
-    $openResult = Open-LogStream -Path (Join-Path $HasilDir "run_log.txt") -Retries 8 -DelayMs 200
-    $logStream = $openResult.StreamWriter
-    $actualLogPath = $openResult.Path
-    if ($openResult.IsFallback) { Write-Host "Using fallback log file: $actualLogPath" -ForegroundColor Yellow } else { Write-Host "Logging to: $actualLogPath" }
-
-    Write-Host "Starting pipeline_run.py ..." -ForegroundColor Green
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = "python"
-    $psi.Arguments = "`"$pyPath`""
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.UseShellExecute = $false
-    $psi.CreateNoWindow = $true
-    $psi.WorkingDirectory = $HasilDir
-
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
-    $proc.Start() | Out-Null
-
-    try {
-      while (-not $proc.HasExited) {
-        while (-not $proc.StandardOutput.EndOfStream) {
-          $line = $proc.StandardOutput.ReadLine()
-          if ($line -ne $null) {
-            if ($line -match "Wait expired" -or $line -match "Watchdog" -or $line -match "Browser is being closed") { continue }
-            Write-Host $line
-            try { $logStream.WriteLine($line) } catch {}
-          }
-        }
-        while (-not $proc.StandardError.EndOfStream) {
-          $err = $proc.StandardError.ReadLine()
-          if ($err -ne $null) {
-            if ($err -match "Wait expired" -or $err -match "Watchdog" -or $err -match "Browser is being closed") { continue }
-            Write-Host $err -ForegroundColor Red
-            try { $logStream.WriteLine($err) } catch {}
-          }
-        }
-        Start-Sleep -Milliseconds 100
-      }
-      # drain remainder
-      while (-not $proc.StandardOutput.EndOfStream) {
-        $line = $proc.StandardOutput.ReadLine()
-        if ($line -ne $null) {
-          if ($line -match "Wait expired" -or $line -match "Watchdog" -or $line -match "Browser is being closed") { continue }
-          Write-Host $line
-          try { $logStream.WriteLine($line) } catch {}
-        }
-      }
-      while (-not $proc.StandardError.EndOfStream) {
-        $err = $proc.StandardError.ReadLine()
-        if ($err -ne $null) {
-          if ($err -match "Wait expired" -or $err -match "Watchdog" -or $err -match "Browser is being closed") { continue }
-          Write-Host $err -ForegroundColor Red
-          try { $logStream.WriteLine($err) } catch {}
-        }
-      }
-      $exitCode = $proc.ExitCode
-      try { $logStream.WriteLine("PROCESS_EXIT_CODE: $exitCode") } catch {}
-      $logStream.Flush()
-    } finally {
-      if ($logStream) { $logStream.Close() }
-      if ($proc -and -not $proc.HasExited) { try { $proc.Kill() } catch {} }
-    }
-
-    if ($exitCode -eq 0) {
-      Write-Host "`nPipeline finished successfully (exit code 0)." -ForegroundColor Cyan
-    } else {
-      Write-Host "`nPipeline finished with exit code $exitCode" -ForegroundColor Red
-      Write-Host "`nLast 200 lines of log ($actualLogPath):" -ForegroundColor Yellow
-      if (Test-Path $actualLogPath) {
-        Get-Content -Path $actualLogPath -Tail 200 | ForEach-Object {
-          if ($_ -match "Wait expired|Watchdog|Browser is being closed") { continue }
-          Write-Host $_
-        }
-      }
-    }
-  } else {
-    Write-Host "RunNow = false; pipeline written but not executed." -ForegroundColor Yellow
-  }
-
-  # -----------------------
-  # Build notebook summarizing run
-  # -----------------------
-  try {
-    $runLog = if (Test-Path $actualLogPath) { [string]::Join("`n", (Get-Content -Path $actualLogPath -ErrorAction SilentlyContinue)) } else { "No run_log available." }
-
-    $processedFileObj = Get-ChildItem -Path (Join-Path $HasilDir "data\processed") -Filter "*_parsed.csv" -File -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($null -ne $processedFileObj) {
-      $procLines = Get-Content -Path $processedFileObj.FullName -ErrorAction SilentlyContinue | Select-Object -Last 5
-      $processedPreview = [string]::Join("`n", $procLines)
-    } else { $processedPreview = "Processed CSV not found." }
-
-    $forecastFileObj = Get-ChildItem -Path $HasilDir -Filter "*_forecast_*.csv" -File -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($null -ne $forecastFileObj) {
-      $fcLines = Get-Content -Path $forecastFileObj.FullName -ErrorAction SilentlyContinue | Select-Object -First 10
-      $forecastPreview = [string]::Join("`n", $fcLines)
-    } else { $forecastPreview = "Forecast CSV not found." }
-
-    $cells = @()
-
-    $cells += @{
-      cell_type = "markdown"
-      metadata = @{}
-      source = @(
-        "# Time Series Forecasting — Run Summary`n",
-        "`n",
-        "This notebook was generated automatically and contains a short run log, previews and artifact list.`n"
-      )
-    }
-
-    $runLogLines = if ($runLog -ne $null) { $runLog -split "`n" } else { @("No run_log available.") }
-    $cells += @{
-      cell_type = "code"
-      metadata = @{}
-      execution_count = $null
-      source = @("# Run log (last lines)`n")
-      outputs = @(
-        @{
-          output_type = "execute_result"
-          data = @{ "text/plain" = $runLogLines }
-          metadata = @{}
-          execution_count = 1
-        }
-      )
-    }
-
-    $procLinesArray = if ($processedPreview -ne $null) { $processedPreview -split "`n" } else { @("Processed CSV not found.") }
-    $cells += @{
-      cell_type = "code"
-      metadata = @{}
-      execution_count = $null
-      source = @("# Processed preview (last 5 rows)`n")
-      outputs = @(
-        @{
-          output_type = "execute_result"
-          data = @{ "text/plain" = $procLinesArray }
-          metadata = @{}
-          execution_count = 1
-        }
-      )
-    }
-
-    $fcLinesArray = if ($forecastPreview -ne $null) { $forecastPreview -split "`n" } else { @("Forecast CSV not found.") }
-    $cells += @{
-      cell_type = "code"
-      metadata = @{}
-      execution_count = $null
-      source = @("# Forecast preview (first 10 rows)`n")
-      outputs = @(
-        @{
-          output_type = "execute_result"
-          data = @{ "text/plain" = $fcLinesArray }
-          metadata = @{}
-          execution_count = 1
-        }
-      )
-    }
-
-    $artifactLines = @("Artifacts found in $HasilDir")
-    foreach ($h in $htmls) { $artifactLines += $h.FullName }
-    foreach ($c in $csvs)  { $artifactLines += $c.FullName }
-    foreach ($j in $jsons) { $artifactLines += $j.FullName }
-    foreach ($m in $models) { $artifactLines += $m.FullName }
-
-    $cells += @{
-      cell_type = "code"
-      metadata = @{}
-      execution_count = $null
-      source = @("# Artifacts`n")
-      outputs = @(
-        @{
-          output_type = "execute_result"
-          data = @{ "text/plain" = $artifactLines }
-          metadata = @{}
-          execution_count = 1
-        }
-      )
-    }
-
-    $nb = @{
-      nbformat = 4
-      nbformat_minor = 5
-      metadata = @{
-        kernelspec = @{ name = "python3"; display_name = "Python 3" }
-        language_info = @{ name = "python" }
-      }
-      cells = $cells
-    }
-
-    $nbPath = Join-Path $HasilDir "TimeSeriesForecasting_results.ipynb"
-    $nb | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $nbPath -Encoding UTF8
-    Write-Host "Wrote notebook: $nbPath" -ForegroundColor Green
-
-  } catch {
-    Write-Host "Failed to create notebook: $_" -ForegroundColor Yellow
-  }
-
-  Write-Host "`nAll done."
-}
-catch {
-  Write-Host "Script failed: $_" -ForegroundColor Red
-  if ($_.Exception -ne $null) { Write-Host $_.Exception.Message -ForegroundColor Red }
-}
-```
-
----
-
-## Combined HTML report (gabungan Plotly report + YoY UI)
-Berikut saya masukkan seluruh HTML gabungan (Combined YoY & Notebook/Plotly) — simpan sebagai:
-notebooks_html/report_combined_yoy_and_notebook.html
-
-```html name=notebooks_html/report_combined_yoy_and_notebook.html
-<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Report — Combined YoY Analysis & Notebook Preview</title>
-  <meta name="description" content="Gabungan laporan Plotly (Actual vs Forecast) dan UI interaktif YoY + notebook preview. Open locally from notebooks_html folder.">
-
+  <title>Combined Report — Image + YoY Editor</title>
+  <meta name="description" content="Upload image left, create YoY chart right, edit (overlay) chart onto uploaded image and save edited image. If no image present, Edit will create a new base image to draw overlay." />
   <style>
     :root{
-      --bg:#f6f8fb; --card:#ffffff; --muted:#6b7280; --accent:#2563eb;
-      --radius:12px; --border:#e6eef8; --shadow:0 6px 20px rgba(15,23,42,0.06);
-      --gap:18px; --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Segoe UI Mono", monospace;
+      --bg: linear-gradient(180deg,#f8fbff,#f2f7ff);
+      --muted: #6b7280;
+      --accent: #6366f1;
+      --card: #fff;
+      --control-gap: 10px;
+      --btn-height: 36px;
     }
-    *{box-sizing:border-box}
-    body{margin:18px;background:linear-gradient(180deg,#fbfdff 0%,var(--bg)100%);font-family:Inter,system-ui,Roboto,Arial;color:#0f172a}
-    .container{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:18px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    header h1{margin:0;font-size:20px}
-    header p{margin:0;color:var(--muted);font-size:13px}
-    .content{display:grid;grid-template-columns: 1fr 420px;gap:18px;align-items:start}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
-    .plot-card{padding:8px}
-    .ui-card{padding:12px;display:flex;flex-direction:column;gap:10px}
-    label{display:block;font-weight:700;font-size:13px;margin-top:6px}
-    input,select,button,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e3e8f0;background:#fff}
-    .row{display:flex;gap:8px}
-    .small{width:auto;padding:6px 10px;font-size:13px}
-    .btn{background:var(--accent);color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-weight:700}
-    .btn.ghost{background:transparent;border:1px solid rgba(37,99,235,0.12);color:var(--accent)}
-    .muted{color:var(--muted);font-size:13px}
-    .chart-wrap{height:540px;border-radius:10px;padding:8px;background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid #eef4ff}
-    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
-    th,td{padding:10px;border-bottom:1px solid #f1f5f9;text-align:left}
-    th{background:#fbfdff;font-weight:800}
-    pre.code{background:#0b1220;color:#e6eef8;padding:12px;border-radius:8px;overflow:auto;font-family:var(--mono);font-size:13px}
-    footer{margin-top:12px;color:var(--muted);font-size:13px}
-    @media(max-width:1040px){ .content{grid-template-columns:1fr} .chart-wrap{height:420px} }
+    html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,system-ui,Roboto,Arial;color:#071032}
+    .container{max-width:1200px;margin:18px auto;display:grid;grid-template-columns:640px 1fr;gap:18px}
+    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 30px rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.04)}
+    h2{margin:0 0 6px 0}
+    .small{font-size:13px;color:var(--muted);line-height:1.35}
+    .img-wrap{height:560px;border-radius:10px;background:#fff;border:1px solid rgba(6,182,212,0.04);overflow:auto;display:flex;align-items:center;justify-content:center;padding:12px}
+    .controls{display:flex;flex-wrap:wrap;align-items:center;gap:var(--control-gap);margin-top:12px}
+    .file-control{display:flex;align-items:center;gap:8px}
+    input[type=file]{height:var(--btn-height)}
+    .btn{height:var(--btn-height);padding:0 12px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:#fff;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff;border:none;box-shadow:0 4px 10px rgba(99,102,241,0.12)}
+    .btn.ghost{background:#fff}
+    .btn-group{display:flex;gap:8px;align-items:center}
+    .params{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+    label{font-size:13px}
+    input[type=range]{vertical-align:middle}
+    input[type=number]{padding:6px;border-radius:6px;border:1px solid #e6edf7;width:80px}
+    select{padding:6px;border-radius:6px;border:1px solid #e6edf7}
+    .right-col .card{margin-bottom:12px}
+    .chart-canvas{background:#fff;border-radius:8px;padding:8px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    table th, table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left}
+    td.editable{background:#fff7e6}
+    td.actions{width:160px;text-align:center}
+    @media(max-width:980px){
+      .container{grid-template-columns:1fr}
+      .img-wrap{height:320px}
+    }
   </style>
-
-  <!-- Plotly & Chart.js (CDN) -->
-  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <header>
-      <div>
-        <h1>Combined Report — Actual vs Forecast & YoY Analysis</h1>
-        <p class="muted">File gabungan: laporan Plotly (report produced by pipeline) + UI interaktif YoY + notebook preview. Buka dari folder notebooks_html.</p>
+    <section class="card">
+      <h2>Plot (PNG / JPG)</h2>
+      <div class="small">Upload pipeline PNG/JPG. Use "Edit PNG" to apply chart overlay — the left image will be edited in-place. If no image exists, Edit will create a new white canvas and draw the overlay. Use "Revert" to restore uploaded original, "Delete" to remove uploaded/edited image, and "Save Edited" to download the edited image.</div>
+
+      <div class="controls" style="margin-top:16px">
+        <div class="file-control">
+          <input id="plotImageFile" type="file" accept="image/png,image/jpeg" />
+          <div id="leftInfo" style="font-size:13px;color:var(--muted);margin-left:6px">Loaded image: —</div>
+        </div>
+
+        <div class="btn-group" style="margin-left:auto">
+          <button id="editLeftPng" class="btn primary">Edit PNG</button>
+          <button id="revertLeftPng" class="btn">Revert</button>
+          <button id="deleteLeftPng" class="btn">Delete</button>
+          <button id="saveEditedPng" class="btn">Save Edited</button>
+        </div>
       </div>
-      <div class="muted">Local-safe • No data sent externally</div>
-    </header>
 
-    <div class="content">
-      <!-- Left: Plotly report (Actual vs Forecast) + ChartJS overview -->
-      <section class="card plot-card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong>AAPL Actual vs Forecast (Plotly)</strong>
-          <div class="row">
-            <button id="btnLoadForecast" class="btn.ghost small">Load forecast CSV</button>
-            <button id="btnShowYoY" class="btn small">Open YoY panel</button>
-          </div>
+      <div class="img-wrap" id="leftCanvasWrap" style="margin-top:14px">
+        <div class="small">No image loaded.</div>
+      </div>
+
+      <div class="params">
+        <label>Opacity: <input id="overlayOpacity" type="range" min="0" max="1" step="0.05" value="0.9" /></label>
+        <label>Scale (%): <input id="overlayScale" type="number" value="30" />%</label>
+        <label>Position:
+          <select id="overlayPosition">
+            <option value="top-right">Top-right</option>
+            <option value="top-left">Top-left</option>
+            <option value="bottom-right">Bottom-right</option>
+            <option value="bottom-left">Bottom-left</option>
+            <option value="center">Center</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <aside class="card right-col">
+      <h2>Analisis Perbandingan Waktu — YoY Editor</h2>
+      <div class="small">Unggah CSV (date,value) atau masukkan data manual. Klik Generate untuk membuat Chart (Chart.js). Setelah generate, gunakan "Edit PNG" untuk menerapkan overlay ke gambar kiri (atau membuat base baru jika belum ada), lalu "Save Edited" untuk menyimpan hasil.</div>
+
+      <div class="card" style="margin-top:12px">
+        <label>CSV (date,value): <input id="csvFile" type="file" accept=".csv" /></label>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <input id="manualYear" type="number" placeholder="Year" style="width:90px" />
+          <input id="manualValue" type="number" placeholder="Value" style="width:120px" />
+          <input id="manualCount" type="number" placeholder="Count" style="width:90px" min="0" value="1" />
+          <button id="addManualBtn" class="btn">Tambah</button>
         </div>
 
-        <div id="plotlyContainer" class="chart-wrap" style="margin-top:12px;">
-          <!-- Plotly graph will be injected here -->
-          <div id="plotlyDiv" style="width:100%;height:100%"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+          <label>Rentang tahun:</label>
+          <input id="yearFrom" type="number" value="2019" style="width:100px" />
+          <input id="yearTo" type="number" value="2024" style="width:100px" />
         </div>
 
-        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 260px;gap:12px">
-          <div class="card" style="padding:10px">
-            <strong>Quick stats</strong>
-            <div id="quickStats" class="muted" style="margin-top:8px">Tidak ada data terpasang.</div>
-          </div>
-          <div class="card" style="padding:10px">
-            <strong>Export</strong>
-            <div style="margin-top:8px" class="row">
-              <button id="exportPlotPng" class="btn.ghost small">Save PNG</button>
-              <button id="exportCombinedHtml" class="btn.ghost small">Save combined HTML</button>
-            </div>
-            <div style="margin-top:8px" class="muted">Simpan snapshot plot / file gabungan untuk distribusi.</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Right: Interactive YoY UI + Notebook preview (combined into same page) -->
-      <aside class="card ui-card" id="yoyPanel" aria-hidden="false">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong>Analisis Perbandingan Waktu & Penjelasan</strong>
-          <div class="muted" id="statusMsg">Siap</div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <label>Mode periode:
+            <select id="periodMode"><option value="fullYear">Full year</option><option value="monthDayRange">Month-day range</option><option value="customDates">Custom dates</option></select>
+          </label>
+          <label>Agregasi:
+            <select id="aggMode"><option value="avg">AVG</option><option value="sum">SUM</option><option value="last">LAST</option></select>
+          </label>
         </div>
 
-        <label>Unggah CSV (kolom: date,value) atau drag-drop</label>
-        <input id="csvUpload" type="file" accept=".csv" />
-
-        <label>Atau input manual (tahun & nilai)</label>
-        <div class="row">
-          <input id="manualYear" type="number" placeholder="Tahun" />
-          <input id="manualValue" type="number" placeholder="Nilai" />
-          <button id="btnAddManual" class="btn.ghost small">Tambah</button>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button id="generateBtn" class="btn primary">Generate</button>
+          <button id="exportCsvBtn" class="btn">Export CSV</button>
+          <button id="downloadIpynb" class="btn">Download .ipynb</button>
         </div>
-        <div id="manualList" class="muted" style="min-height:34px"></div>
+      </div>
 
-        <label>Pengaturan Periode / Waktu</label>
-        <select id="granularity">
-          <option value="year">Tahunan</option>
-          <option value="quarter">Kuartal</option>
-          <option value="month">Bulanan</option>
-          <option value="day">Harian</option>
-        </select>
-
-        <label>Mode periode</label>
-        <select id="periodMode">
-          <option value="fullYear">Seluruh tahun (01-01 - 12-31)</option>
-          <option value="monthDayRange">Rentang bulan-hari (MM-DD)</option>
-          <option value="customDates">Template tanggal (yyyy-mm-dd)</option>
-        </select>
-
-        <div id="monthDayBlock" style="display:none">
-          <div class="row">
-            <input id="startMMDD" placeholder="01-01" />
-            <input id="endMMDD" placeholder="12-31" />
-          </div>
+      <div class="card" style="margin-top:12px">
+        <strong>Hasil & Visualisasi</strong>
+        <div style="margin-top:8px" class="chart-canvas">
+          <canvas id="chartCanvas" width="520" height="260"></canvas>
         </div>
 
-        <div id="templateBlock" style="display:none">
-          <div class="row">
-            <input id="startTemplate" type="date" />
-            <input id="endTemplate" type="date" />
-          </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <label style="font-size:13px"><input id="overlayIfImage" type="checkbox" checked /> Overlay ke left image</label>
+          <button id="downloadChartPng" class="btn" style="margin-left:auto">Save Chart PNG</button>
+          <button id="saveTableCsv" class="btn" style="margin-left:8px">Save Table CSV</button>
         </div>
 
-        <label>Rentang tahun</label>
-        <div class="row">
-          <input id="yearFrom" type="number" value="2019" />
-          <input id="yearTo" type="number" value="2024" />
-        </div>
+        <table id="resultTable" style="margin-top:12px;display:none">
+          <thead><tr><th>Year</th><th>Value</th><th>Count</th><th>Diff</th><th>%</th><th>Aksi</th></tr></thead>
+          <tbody></tbody>
+        </table>
 
-        <label>Metode agregasi</label>
-        <select id="aggMode">
-          <option value="sum">SUM</option>
-          <option value="avg" selected>AVG</option>
-          <option value="last">LAST</option>
-        </select>
-
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="btnGenerate" class="btn">Generate</button>
-          <button id="btnExportCsv" class="btn.ghost small">Export Hasil CSV</button>
-        </div>
-
-        <div style="margin-top:10px">
-          <strong>Hasil (Tabel)</strong>
-          <table id="resultTable" style="display:none">
-            <thead><tr><th>Periode</th><th>Nilai</th><th>Selisih</th><th>Perubahan %</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div style="margin-top:10px">
-          <strong>Penjelasan (heuristik)</strong>
-          <div id="explanation" class="muted" style="max-height:160px;overflow:auto;padding:8px;border-radius:8px;background:#fbfdff;border:1px solid #eef4ff"></div>
-        </div>
-
-        <div style="margin-top:10px">
+        <div style="margin-top:12px">
           <strong>Notebook preview</strong>
-          <pre id="notebookPreview" class="code" style="height:160px">Notebook summary will appear here after pipeline run or Generate.</pre>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button id="btnDownloadIpynb" class="btn.ghost small">Download .ipynb</button>
-            <button id="btnInsertToPlot" class="btn.ghost small">Inject to Plot (overlay)</button>
-          </div>
+          <pre id="notebookPreview" style="height:120px;background:#0b1220;color:#e6eef8;padding:8px;border-radius:6px;overflow:auto">Notebook preview will appear here.</pre>
         </div>
-      </aside>
-    </div>
-
-    <footer class="muted">Saved artifacts usually placed under notebooks_html in pipeline output. This combined file brings both interactive YoY analysis and the Plotly report into one page for convenience.</footer>
+      </div>
+    </aside>
   </div>
 
 <script>
-/* ========= Utilities ========= */
+/* --- Helpers --- */
 function parseCSV(text){
-  const lines = text.replace(/\r\n/g,"\n").split("\n").filter(l=>l.trim()!=="");
-  if(!lines.length) return {header:[],rows:[]};
-  const header = lines[0].split(",").map(h=>h.trim());
-  const rows = lines.slice(1).map(r=>r.split(",").map(c=>c.trim()));
+  const lines = text.replace(/\r\n/g,'\n').split('\n').filter(l=>l.trim()!=='');
+  if(!lines.length) return {header:[], rows:[]};
+  const header = lines[0].split(',').map(h=>h.trim());
+  const rows = lines.slice(1).map(l=>l.split(',').map(c=>c.trim()));
   return {header, rows};
 }
 function toDate(s){
   if(!s) return null;
   const d = Date.parse(s);
   if(!isNaN(d)) return new Date(d);
-  const m = s.match(/^(\d{1,2})[\/\-\.\s](\d{1,2})[\/\-\.\s](\d{2,4})$/);
-  if(m){
-    let a=parseInt(m[1],10), b=parseInt(m[2],10)-1, c=parseInt(m[3],10);
-    if(c<100) c += 2000;
-    return new Date(c,b,a);
-  }
+  const m = s && s.match(/^(\d{1,2})[\/\-\.\s](\d{1,2})[\/\-\.\s](\d{2,4})$/);
+  if(m){ let a=parseInt(m[1],10), b=parseInt(m[2],10)-1, c=parseInt(m[3],10); if(c<100) c+=2000; return new Date(c,b,a); }
   return null;
 }
-function fmt(v){ return v===null||v===undefined? "-" : Number(v).toLocaleString('en-US',{maximumFractionDigits:2}); }
+function fmtNum(v){ return (v===null||v===undefined) ? "-" : Number(v).toLocaleString('en-US',{maximumFractionDigits:2}); }
 
-/* ========= State ========= */
-let rawData = []; // {date:Date,value:Number}
-let manual = {};
-let plotDataLoaded = false;
-let plotlyFig = null;
+/* --- Elements --- */
+const plotImageFile = document.getElementById('plotImageFile');
+const leftCanvasWrap = document.getElementById('leftCanvasWrap');
+const leftInfo = document.getElementById('leftInfo');
+const editLeftPng = document.getElementById('editLeftPng');
+const revertLeftPng = document.getElementById('revertLeftPng');
+const deleteLeftPng = document.getElementById('deleteLeftPng');
+const saveEditedPng = document.getElementById('saveEditedPng');
 
-/* ========= Elements ========= */
-const csvUpload = document.getElementById('csvUpload');
-const btnLoadForecast = document.getElementById('btnLoadForecast');
-const plotlyDiv = document.getElementById('plotlyDiv');
-const statusMsg = document.getElementById('statusMsg');
-
+const csvFile = document.getElementById('csvFile');
 const manualYear = document.getElementById('manualYear');
 const manualValue = document.getElementById('manualValue');
-const btnAddManual = document.getElementById('btnAddManual');
-const manualList = document.getElementById('manualList');
-
-const periodMode = document.getElementById('periodMode');
-const monthDayBlock = document.getElementById('monthDayBlock');
-const templateBlock = document.getElementById('templateBlock');
-const startMMDD = document.getElementById('startMMDD');
-const endMMDD = document.getElementById('endMMDD');
-const startTemplate = document.getElementById('startTemplate');
-const endTemplate = document.getElementById('endTemplate');
+const manualCount = document.getElementById('manualCount');
+const addManualBtn = document.getElementById('addManualBtn');
 
 const yearFrom = document.getElementById('yearFrom');
 const yearTo = document.getElementById('yearTo');
+const periodMode = document.getElementById('periodMode');
 const aggMode = document.getElementById('aggMode');
-const btnGenerate = document.getElementById('btnGenerate');
+const generateBtn = document.getElementById('generateBtn');
+const exportCsvBtn = document.getElementById('exportCsvBtn');
+const downloadIpynbBtn = document.getElementById('downloadIpynb');
+
+const chartCanvas = document.getElementById('chartCanvas');
+const downloadChartPng = document.getElementById('downloadChartPng');
+const saveTableCsv = document.getElementById('saveTableCsv');
+const overlayIfImage = document.getElementById('overlayIfImage');
+const overlayOpacity = document.getElementById('overlayOpacity');
+const overlayScale = document.getElementById('overlayScale');
+const overlayPosition = document.getElementById('overlayPosition');
+
 const resultTable = document.getElementById('resultTable');
 const resultTbody = resultTable.querySelector('tbody');
-const explanation = document.getElementById('explanation');
 const notebookPreview = document.getElementById('notebookPreview');
-const btnDownloadIpynb = document.getElementById('btnDownloadIpynb');
-const btnExportCsv = document.getElementById('btnExportCsv');
-const btnShowYoY = document.getElementById('btnShowYoY');
-const btnExportPlotPng = document.getElementById('exportPlotPng');
-const btnInsertToPlot = document.getElementById('btnInsertToPlot');
-const quickStats = document.getElementById('quickStats');
-const btnSaveHtml = document.getElementById('exportCombinedHtml');
 
-/* ========= UI bindings ========= */
-periodMode.addEventListener('change', ()=>{
-  const v = periodMode.value;
-  monthDayBlock.style.display = (v==='monthDayRange')? '':'none';
-  templateBlock.style.display = (v==='customDates')? '':'none';
+let rawData = []; // array of {date, value}
+let manualData = {}; // year => { value: number, count: number }
+let chart = null;
+
+/* LEFT: image handlers unchanged */
+plotImageFile.addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  leftCanvasWrap.innerHTML = '';
+  leftInfo.textContent = "Loading image...";
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const dataUrl = ev.target.result;
+    const img = document.createElement('img');
+    img.style.maxWidth = "100%";
+    img.style.maxHeight = "100%";
+    img.src = dataUrl;
+    img.dataset.original = dataUrl;
+    img.dataset.filename = f.name;
+    delete img.dataset.edited;
+    leftCanvasWrap.appendChild(img);
+    leftInfo.textContent = `Loaded image: ${f.name}`;
+  };
+  reader.readAsDataURL(f);
 });
+deleteLeftPng.addEventListener('click', ()=>{ leftCanvasWrap.innerHTML = '<div class="small">No image loaded.</div>'; leftInfo.textContent = "Loaded image: —"; });
+revertLeftPng.addEventListener('click', ()=>{ const img = leftCanvasWrap.querySelector('img'); if(!img){ alert('No image loaded'); return; } if(img.dataset && img.dataset.original){ img.src = img.dataset.original; leftInfo.textContent = `Reverted to original: ${img.dataset.filename || 'uploaded'}`; delete img.dataset.edited; } else { alert('Original image not available to revert.'); }});
+saveEditedPng.addEventListener('click', ()=>{ const img = leftCanvasWrap.querySelector('img'); if(!img || !img.src){ alert('No image loaded'); return; } const dataUrl = img.dataset.edited || img.src; const originalName = (img.dataset && img.dataset.filename) ? img.dataset.filename.replace(/\.[^/.]+$/, "") : "left_image"; const suggested = `${originalName}-edited.png`; const a = document.createElement('a'); a.href = dataUrl; a.download = suggested; document.body.appendChild(a); a.click(); a.remove(); });
 
-csvUpload.addEventListener('change', e=>{
-  const f = e.target.files[0];
+/* CSV import -> rawData unchanged */
+csvFile.addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0];
   if(!f) return;
   const r = new FileReader();
-  r.onload = ()=> {
+  r.onload = ()=>{
     const parsed = parseCSV(r.result);
-    const {header, rows} = parsed;
-    // auto-detect date and numeric columns
-    let dateIdx=-1,valIdx=-1;
+    const header = parsed.header, rows = parsed.rows;
+    let dateIdx=-1, valIdx=-1;
     for(let i=0;i<header.length;i++){
-      let dcount=0, ncount=0;
-      for(let j=0;j<Math.min(rows.length,40);j++){
+      let dcount=0,ncount=0;
+      for(let j=0;j<Math.min(rows.length,80); j++){
         const v = rows[j][i]||"";
         if(toDate(v)) dcount++;
         if(v!=="" && !isNaN(parseFloat(v))) ncount++;
       }
-      if(dcount >= Math.max(1, Math.floor(rows.length*0.25))) dateIdx=i;
-      if(ncount >= Math.max(1, Math.floor(rows.length*0.25))) valIdx=i;
+      if(dcount >= Math.max(1, Math.floor(rows.length*0.25))) dateIdx = i;
+      if(ncount >= Math.max(1, Math.floor(rows.length*0.25))) valIdx = i;
     }
-    if(dateIdx===-1) dateIdx=0;
-    if(valIdx===-1) valIdx=(header.length>1?1:0);
+    if(dateIdx === -1) dateIdx = 0;
+    if(valIdx === -1) valIdx = (header.length>1?1:0);
     rawData = [];
     rows.forEach(rw=>{
       const d = toDate(rw[dateIdx]);
       const v = parseFloat(rw[valIdx]);
-      if(d && !isNaN(v)) rawData.push({date:d,value:v});
+      if(d && !isNaN(v)) rawData.push({date:d, value:v});
     });
-    statusMsg.textContent = `CSV loaded — ${rawData.length} valid rows (date col=${header[dateIdx]||dateIdx}, value col=${header[valIdx]||valIdx})`;
-    quickStats.innerText = `Loaded ${rawData.length} rows. Date range: ${rawData.length? rawData[0].date.toISOString().slice(0,10):'-'} ... ${rawData.length? rawData[rawData.length-1].date.toISOString().slice(0,10):'-'}`;
+    rawData.sort((a,b)=>a.date - b.date);
+    notebookPreview.textContent = rawData.slice(0,50).map(r=>`${r.date.toISOString().slice(0,10)},${r.value}`).join('\n') || "No valid rows";
+    alert(`CSV loaded — ${rawData.length} valid rows`);
   };
   r.readAsText(f);
 });
 
-btnAddManual.addEventListener('click', ()=>{
+/* Add manual row (Year/Value/Count) -> store in manualData as {value,count} */
+addManualBtn.addEventListener('click', ()=>{
   const y = parseInt(manualYear.value,10);
-  const v = parseFloat(manualValue.value);
-  if(!y || isNaN(v)){ alert('Masukkan tahun & nilai valid'); return; }
-  manual[y]=v;
-  manualYear.value=""; manualValue.value="";
-  renderManual();
+  const v = manualValue.value === '' ? null : parseFloat(manualValue.value);
+  const c = manualCount.value === '' ? 1 : parseInt(manualCount.value,10);
+  if(isNaN(y) || (v===null || isNaN(v)) || isNaN(c) || c < 0){ alert('Masukkan Year, Value, dan Count yang valid'); return; }
+  manualData[y] = { value: v, count: c };
+  manualYear.value=''; manualValue.value=''; manualCount.value='1';
+  alert('Manual row added');
 });
 
-function renderManual(){
-  const keys = Object.keys(manual).map(k=>parseInt(k)).sort((a,b)=>a-b);
-  if(!keys.length){ manualList.innerText=''; return; }
-  manualList.innerHTML = keys.map(k=>`${k}: ${fmt(manual[k])}`).join(' • ');
+/* Compute YoY now respects manualData entries with counts:
+   - if useManual (manualData exists & rawData empty), for each year:
+     - if agg == "avg": value_for_series = manual.value / manual.count (if count>0)
+     - if agg == "sum": value_for_series = manual.value
+     - if agg == "last": value_for_series = manual.value
+   The "count" column is used as informational / to compute AVG when user provides aggregated value.
+*/
+function computeYoY(fromYear, toYear, mode, agg){
+  const results = [];
+  const useManual = (Object.keys(manualData).length > 0 && rawData.length === 0);
+  for(let y=fromYear;y<=toYear;y++){
+    let start = new Date(y,0,1), end = new Date(y,11,31,23,59,59);
+    if(mode === 'monthDayRange'){
+      const s = document.getElementById('startMMDD') ? document.getElementById('startMMDD').value || '01-01' : '01-01';
+      const e = document.getElementById('endMMDD') ? document.getElementById('endMMDD').value || '12-31' : '12-31';
+      const sp = s.split('-'), ep = e.split('-');
+      start = new Date(y, parseInt(sp[0],10)-1, parseInt(sp[1],10));
+      end = new Date(y, parseInt(ep[0],10)-1, parseInt(ep[1],10), 23,59,59);
+    } else if(mode === 'customDates'){
+      const stElem = document.getElementById('startTemplate'), enElem = document.getElementById('endTemplate');
+      const st = stElem ? stElem.value : null;
+      const en = enElem ? enElem.value : null;
+      if(st && en){
+        const sdate = new Date(st), edate = new Date(en);
+        start = new Date(y, sdate.getMonth(), sdate.getDate());
+        end = new Date(y, edate.getMonth(), edate.getDate(), 23,59,59);
+      }
+    }
+    let vals = [];
+    let count = 0;
+    if(useManual){
+      const entry = manualData[y];
+      if(entry !== undefined && entry.value != null){
+        // interpret manual entry according to agg
+        if(agg === 'sum' || agg === 'last'){
+          vals = [entry.value];
+          count = entry.count || 1;
+        } else { // avg
+          // if user provided aggregated sum in entry.value with count entry.count,
+          // compute average value_for_series = entry.value / count
+          if(entry.count && entry.count > 0){
+            vals = [entry.value / entry.count];
+            count = entry.count;
+          } else {
+            vals = [entry.value];
+            count = 1;
+          }
+        }
+      } else {
+        vals = [];
+        count = 0;
+      }
+    } else {
+      const filtered = rawData.filter(r=> r.date>=start && r.date<=end).map(r=>r.value);
+      vals = filtered;
+      count = filtered.length;
+    }
+    let value = null;
+    if(vals.length === 0) value = null;
+    else if(agg === 'sum') value = vals.reduce((a,b)=>a+b,0);
+    else if(agg === 'last') value = vals[vals.length-1];
+    else value = vals.reduce((a,b)=>a+b,0)/vals.length;
+    results.push({year:y, value:value, count:count});
+  }
+  for(let i=0;i<results.length;i++){
+    const cur=results[i], prev=i>0?results[i-1]:null;
+    if(prev && cur.value!=null && prev.value!=null){ cur.diff = cur.value - prev.value; cur.pct = prev.value!==0 ? (cur.diff/Math.abs(prev.value))*100 : null; } else { cur.diff=null; cur.pct=null; }
+  }
+  return results;
 }
 
-/* ========= Aggregation & Explanation ========= */
-function aggregateAndExplain(){
-  const from = parseInt(yearFrom.value,10), to = parseInt(yearTo.value,10);
-  if(isNaN(from)||isNaN(to)||from>to){ alert('Rentang tahun tidak valid'); return; }
-  const mode = periodMode.value;
-  const agg = aggMode.value;
-  const useManual = Object.keys(manual).length>0 && rawData.length===0;
-
-  const results = [];
-  for(let y=from;y<=to;y++){
-    let start, end;
-    if(mode==='fullYear'){ start=new Date(y,0,1); end=new Date(y,11,31,23,59,59); }
-    else if(mode==='monthDayRange'){
-      const sp = (startMMDD.value||startMMDD.placeholder||'01-01').split('-');
-      const ep = (endMMDD.value||endMMDD.placeholder||'12-31').split('-');
-      start = new Date(y, parseInt(sp[0],10)-1, parseInt(sp[1],10));
-      end = new Date(y, parseInt(ep[0],10)-1, parseInt(ep[1],10),23,59,59);
-    } else {
-      const st = startTemplate.value ? new Date(startTemplate.value) : new Date(y,0,1);
-      const en = endTemplate.value ? new Date(endTemplate.value) : new Date(y,11,31);
-      start = new Date(y, st.getMonth(), st.getDate());
-      end = new Date(y, en.getMonth(), en.getDate(),23,59,59);
-    }
-
-    if(useManual){
-      const v = manual[y] !== undefined ? manual[y] : null;
-      results.push({period:String(y), value:v, count: v===null?0:1});
-    } else {
-      const slice = rawData.filter(r => r.date >= start && r.date <= end);
-      const values = slice.map(s=>s.value);
-      let value = null;
-      if(values.length===0) value = null;
-      else if(agg==='sum') value = values.reduce((a,b)=>a+b,0);
-      else if(agg==='avg') value = values.reduce((a,b)=>a+b,0)/values.length;
-      else if(agg==='last') value = values[values.length-1];
-      results.push({period:String(y), value: value, count: values.length});
-    }
-  }
-
-  // diffs
-  for(let i=0;i<results.length;i++){
-    const cur = results[i];
-    const prev = i>0?results[i-1]:null;
-    if(prev && cur.value!==null && prev.value!==null){
-      cur.diff = cur.value - prev.value;
-      cur.pct = prev.value!==0 ? (cur.diff / Math.abs(prev.value) * 100) : null;
-    } else { cur.diff=null; cur.pct=null; }
-  }
-
-  // render table & explanation
-  resultTbody.innerHTML = "";
-  const labels=[], data=[];
+/* Render results: includes Count as editable column and Edit/Save per-row plus Hapus */
+function renderResults(results){
+  resultTbody.innerHTML = '';
+  const labels = [], data = [];
   results.forEach(r=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.period}</td><td>${fmt(r.value)}</td><td>${r.diff===null?'-':fmt(r.diff)}</td><td>${r.pct===null?'-':r.pct.toFixed(2)+'%'}</td>`;
-    resultTbody.appendChild(tr);
-    labels.push(r.period); data.push(r.value===null?0:r.value);
-  });
-  resultTable.style.display = 'table';
 
-  // ChartJS mini using Chart.js (re-use simple canvas)
-  // We'll overlay an embedded small ChartJS timeline inside plotlyContainer as convenience
-  // (Plotly is main; ChartJS optional)
-  explanation.innerHTML = '';
-  for(let i=0;i<results.length;i++){
-    const r = results[i];
-    if(i===0) explanation.innerHTML += `<strong>${r.period}:</strong> value = ${r.value===null? 'tidak tersedia': fmt(r.value)}. (Basis awal)\n\n`;
-    else {
-      if(r.value===null) explanation.innerHTML += `<strong>${r.period}:</strong> data tidak tersedia.\n\n`;
-      else {
-        const prev = results[i-1];
-        if(prev.value===null) explanation.innerHTML += `<strong>${r.period}:</strong> ada nilai ${fmt(r.value)} tetapi tahun sebelumnya tidak tersedia.\n\n`;
-        else {
-          const diff = r.value - prev.value;
-          const pct = prev.value!==0 ? diff/Math.abs(prev.value)*100 : null;
-          let reasons=[];
-          if(Math.abs(diff) < Math.abs(prev.value)*0.01) reasons.push('Tidak ada perubahan signifikan (±1%)');
-          if(pct!==null && pct>50) reasons.push('Peningkatan besar — cek news/event');
-          if(pct!==null && pct<-50) reasons.push('Penurunan besar — cek anomali/missing');
-          if(r.count===0) reasons.push('Tidak ada data di rentang (0 bar)');
-          if(reasons.length===0) reasons.push('Perubahan moderat; kombinasi trend+seasonality+volatilitas');
-          explanation.innerHTML += `<strong>${r.period} vs ${prev.period}:</strong> nilai ${fmt(r.value)} (selisih ${fmt(diff)}${pct!==null? ', '+pct.toFixed(2)+'%':''}). Alasan: ${reasons.join('; ')}.\n\n`;
+    const yearTd = document.createElement('td'); yearTd.className = 'year'; yearTd.contentEditable = 'false'; yearTd.innerText = r.year;
+    const valueTd = document.createElement('td'); valueTd.className = 'value'; valueTd.contentEditable = 'false'; valueTd.innerText = r.value===null? '' : r.value;
+    const countTd = document.createElement('td'); countTd.className = 'count'; countTd.contentEditable = 'false'; countTd.innerText = (r.count===null || r.count===undefined) ? '' : String(r.count);
+
+    const diffTd = document.createElement('td'); diffTd.className = 'diff'; diffTd.contentEditable = 'false'; diffTd.innerText = r.diff===null? '-' : fmtNum(r.diff);
+    const pctTd = document.createElement('td'); pctTd.className = 'pct'; pctTd.contentEditable = 'false'; pctTd.innerText = r.pct===null? '-' : (r.pct.toFixed(2)+'%');
+
+    const actionTd = document.createElement('td'); actionTd.className='actions';
+    const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.innerText='Edit';
+    const delBtn = document.createElement('button'); delBtn.className='btn'; delBtn.style.marginLeft='6px'; delBtn.innerText='Hapus';
+    actionTd.appendChild(editBtn); actionTd.appendChild(delBtn);
+
+    // Edit toggle
+    editBtn.addEventListener('click', ()=>{
+      const editing = tr.dataset.editing === 'true';
+      if(!editing){
+        tr.dataset.editing = 'true';
+        tr.dataset.origDiff = diffTd.innerText;
+        tr.dataset.origPct = pctTd.innerText;
+        yearTd.contentEditable = 'true';
+        valueTd.contentEditable = 'true';
+        countTd.contentEditable = 'true';
+        diffTd.contentEditable = 'true';
+        pctTd.contentEditable = 'true';
+        editBtn.innerText = 'Save';
+        valueTd.focus();
+      } else {
+        // Save
+        yearTd.contentEditable = 'false';
+        valueTd.contentEditable = 'false';
+        countTd.contentEditable = 'false';
+        diffTd.contentEditable = 'false';
+        pctTd.contentEditable = 'false';
+        // If user changed diff/pct manually, set manual flag
+        if(diffTd.innerText.trim() !== (tr.dataset.origDiff || '') || pctTd.innerText.trim() !== (tr.dataset.origPct || '')){
+          tr.dataset.manual = 'true';
         }
+        delete tr.dataset.editing;
+        editBtn.innerText = 'Edit';
+        // Update manualData mapping if rawData not used
+        const y = parseInt(yearTd.innerText.trim(),10);
+        const vtxt = valueTd.innerText.trim();
+        const ctxt = countTd.innerText.trim();
+        const v = vtxt === '' ? null : parseFloat(vtxt);
+        const c = ctxt === '' ? 0 : parseInt(ctxt,10);
+        if(!isNaN(y)){
+          if(v === null || isNaN(v)){
+            delete manualData[y];
+          } else {
+            manualData[y] = { value: v, count: (isNaN(c)? 0 : c) };
+          }
+        }
+        recalcFromTable();
+      }
+    });
+
+    // Delete
+    delBtn.addEventListener('click', ()=>{
+      const y = parseInt(yearTd.innerText.trim(),10);
+      if(!isNaN(y) && manualData[y] !== undefined){
+        delete manualData[y];
+      }
+      tr.remove();
+      recalcFromTable();
+    });
+
+    // Blur handlers to update manualData/count on inline edits (when not in edit mode this won't trigger changes)
+    valueTd.addEventListener('blur', ()=> {
+      const y = parseInt(yearTd.innerText.trim(),10);
+      const vtxt = valueTd.innerText.trim();
+      const v = vtxt === '' ? null : parseFloat(vtxt);
+      if(!isNaN(y)){
+        const existing = manualData[y] || { value: null, count: 0 };
+        if(v === null || isNaN(v)){
+          delete manualData[y];
+        } else {
+          existing.value = v;
+          existing.count = existing.count || 1;
+          manualData[y] = existing;
+        }
+      }
+      recalcFromTable();
+    });
+    countTd.addEventListener('blur', ()=> {
+      const y = parseInt(yearTd.innerText.trim(),10);
+      const ctxt = countTd.innerText.trim();
+      const c = ctxt === '' ? 0 : parseInt(ctxt,10);
+      if(!isNaN(y)){
+        const existing = manualData[y] || { value: null, count: 0 };
+        existing.count = isNaN(c) ? 0 : c;
+        if(existing.value === null || existing.value === undefined){
+          // keep but count updated
+          manualData[y] = existing;
+        } else {
+          manualData[y] = existing;
+        }
+      }
+      recalcFromTable();
+    });
+    yearTd.addEventListener('blur', ()=> recalcFromTable());
+
+    tr.appendChild(yearTd);
+    tr.appendChild(valueTd);
+    tr.appendChild(countTd);
+    tr.appendChild(diffTd);
+    tr.appendChild(pctTd);
+    tr.appendChild(actionTd);
+
+    resultTbody.appendChild(tr);
+
+    labels.push(String(r.year)); data.push(r.value===null?NaN:r.value);
+  });
+
+  resultTable.style.display = results.length ? 'table' : 'none';
+  if(chart) try{ chart.destroy(); }catch(e){}
+  const ctx = chartCanvas.getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets:[{ label:'Value', data, borderColor:'rgba(99,102,241,1)', backgroundColor:'rgba(99,102,241,0.12)', fill:true, tension:0.25 }] },
+    options: { responsive:true, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:false} } }
+  });
+  notebookPreview.textContent = "YoY summary\n" + results.map(r=>`${r.year}, value=${r.value===null?'-':r.value}, count=${r.count}`).join('\n');
+}
+
+/* recalcFromTable updated to respect manualData and editable Count */
+function recalcFromTable(){
+  const trs = Array.from(resultTbody.querySelectorAll('tr'));
+  // Build array of rows with year/value/count
+  const rows = trs.map(tr=>{
+    const y = parseInt(tr.querySelector('.year').innerText.trim(),10);
+    const vtxt = tr.querySelector('.value').innerText.trim();
+    const ctxt = tr.querySelector('.count').innerText.trim();
+    const v = vtxt === '' ? null : parseFloat(vtxt);
+    const c = ctxt === '' ? 0 : parseInt(ctxt,10);
+    return { year: y, value: (isNaN(v)? null: v), count: (isNaN(c)? 0: c), tr: tr };
+  }).filter(r=> !isNaN(r.year));
+  rows.sort((a,b)=> a.year - b.year);
+
+  // Update manualData mapping from table where relevant:
+  rows.forEach(r=>{
+    if(r.value !== null){
+      manualData[r.year] = { value: r.value, count: r.count || 0 };
+    } else {
+      if(manualData[r.year] && (manualData[r.year].value === null || manualData[r.year].value === undefined)) {
+        delete manualData[r.year];
+      }
+    }
+  });
+
+  // Now compute diffs/pct skipping rows flagged manual (data-manual="true" on tr)
+  for(let i=0;i<rows.length;i++){
+    const cur = rows[i], prev = i>0?rows[i-1]:null;
+    const tr = cur.tr;
+    const diffCell = tr.querySelector('.diff');
+    const pctCell = tr.querySelector('.pct');
+    if(prev && cur.value!=null && prev.value!=null){
+      const diff = cur.value - prev.value;
+      const pct = prev.value !== 0 ? (diff/Math.abs(prev.value))*100 : null;
+      if(tr.dataset.manual !== 'true'){
+        diffCell.innerText = fmtNum(diff);
+        pctCell.innerText = pct===null? '-' : pct.toFixed(2) + '%';
+      }
+    } else {
+      if(tr.dataset.manual !== 'true'){
+        diffCell.innerText = '-';
+        pctCell.innerText = '-';
       }
     }
   }
-  notebookPreview.innerText = "Notebook summary (auto-generated):\n\n" + results.map(r=>`${r.period}, ${fmt(r.value)}, count=${r.count}`).join("\n");
-  statusMsg.textContent = "Generate selesai.";
+
+  // update chart (use displayed value)
+  const labels = rows.map(r=>String(r.year));
+  const data = rows.map(r=> r.value===null?NaN:r.value);
+  if(chart) chart.destroy();
+  chart = new Chart(chartCanvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets:[{ label:'Value', data, borderColor:'rgba(99,102,241,1)', backgroundColor:'rgba(99,102,241,0.12)', fill:true, tension:0.25 }] },
+    options: { responsive:true, plugins:{legend:{display:false}} }
+  });
 }
 
-/* ========= Plotly rendering (placeholder/fallback) ========= */
-function renderPlotlyDemo(){
-  // If pipeline produced a Plotly HTML report, you can copy its data into this page.
-  // Here we create a demo AAPL style timeseries if no real data is loaded.
-  const dates = [];
-  const values = [];
-  let cur = new Date(2015,0,1);
-  for(let i=0;i<1800;i++){
-    dates.push(new Date(cur));
-    values.push(30 + Math.sin(i/80)*6 + Math.random()*2);
-    cur.setDate(cur.getDate()+1);
-  }
-  const traceActual = { x: dates, y: values, type: 'scatter', name: 'Actual', line:{color:'black'} };
-  const layout = { title: 'AAPL Actual vs Forecast (demo)', xaxis:{title:'Date'}, yaxis:{title:'Price'}, margin:{l:40,r:20,t:40,b:40} };
-  Plotly.newPlot(plotlyDiv, [traceActual], layout, {responsive:true});
-  plotlyFig = {demo:true};
-  plotDataLoaded = true;
-  quickStats.innerText = `Demo plot rendered — ${dates.length} points`;
-}
-
-/* ========= Handlers for load forecast & utilities ========= */
-btnLoadForecast.addEventListener('click', ()=>{
-  // Try to locate forecast CSV from same folder if browser allows file selection:
-  // We prompt user to select a forecast CSV (quick way)
-  const inp = document.createElement('input');
-  inp.type = 'file'; inp.accept = '.csv';
-  inp.onchange = (e)=> {
-    const f = e.target.files[0];
-    if(!f) return;
-    const r = new FileReader();
-    r.onload = ()=>{
-      const txt = r.result;
-      const parsed = parseCSV(txt);
-      const {header, rows} = parsed;
-      // try to find date & forecast columns
-      let dateIdx=-1, valIdx=-1;
-      for(let i=0;i<header.length;i++){
-        let dcount=0,ncount=0;
-        for(let j=0;j<Math.min(rows.length,60);j++){
-          if(toDate(rows[j][i])) dcount++;
-          if(rows[j][i]!="" && !isNaN(parseFloat(rows[j][i]))) ncount++;
-        }
-        if(dcount>ncount && dcount>0) dateIdx=i;
-        if(ncount>0) valIdx=i;
-      }
-      if(dateIdx===-1) dateIdx=0;
-      if(valIdx===-1) valIdx=(header.length>1?1:0);
-      const xs=[], ys=[];
-      rows.forEach(rw=>{ const d=toDate(rw[dateIdx]); const v=parseFloat(rw[valIdx]); if(d && !isNaN(v)){ xs.push(d); ys.push(v); }});
-      if(xs.length===0){ alert('Tidak ada baris valid di CSV.'); return; }
-      // combine with existing plot (if any)
-      const traceFc = { x: xs, y: ys, type:'scatter', name:'Forecast', line:{color:'red',dash:'dash'} };
-      if(!plotDataLoaded) { Plotly.newPlot(plotlyDiv, [traceFc], {title:'Forecast loaded'}, {responsive:true}); plotDataLoaded=true; }
-      else { Plotly.addTraces(plotlyDiv, traceFc); }
-      statusMsg.textContent = `Forecast loaded: ${ys.length} rows`;
-      quickStats.innerText = `Forecast rows: ${ys.length}`;
-    };
-    r.readAsText(f);
-  };
-  inp.click();
+/* Generate button handler unchanged except computeYoY now returns count */
+generateBtn.addEventListener('click', ()=>{
+  const from = parseInt(yearFrom.value,10), to = parseInt(yearTo.value,10);
+  if(isNaN(from) || isNaN(to) || from>to){ alert("Invalid year range"); return; }
+  const agg = aggMode.value;
+  const results = computeYoY(from, to, periodMode.value, agg);
+  renderResults(results);
 });
 
-/* ========= Download notebook (.ipynb) builder ========= */
-btnDownloadIpynb.addEventListener('click', ()=>{
-  const explanationText = explanation.innerText || "No explanation yet.";
-  const processedPreview = notebookPreview.innerText || "No preview.";
-  const tableText = Array.from(resultTbody.querySelectorAll('tr')).map(tr=>Array.from(tr.querySelectorAll('td')).map(td=>td.innerText).join(",")).join("\n") || "No results.";
-  const nb = {
-    nbformat:4, nbformat_minor:5,
-    metadata:{kernelspec:{name:"python3",display_name:"Python 3"},language_info:{name:"python"}},
-    cells:[
-      {cell_type:"markdown",metadata:{},source:["# YoY Analysis Results\nGenerated locally\n\n"]},
-      {cell_type:"code",metadata:{},execution_count:null,source:["# Explanation"],outputs:[{output_type:"execute_result",data:{"text/plain":[explanationText]},metadata:{},execution_count:1}]},
-      {cell_type:"code",metadata:{},execution_count:null,source:["# Processed preview"],outputs:[{output_type:"execute_result",data:{"text/plain":[processedPreview]},metadata:{},execution_count:1}]},
-      {cell_type:"code",metadata:{},execution_count:null,source:["# Results table"],outputs:[{output_type:"execute_result",data:{"text/plain":[tableText]},metadata:{},execution_count:1}]}
-    ]
-  };
-  const blob = new Blob([JSON.stringify(nb,null,2)],{type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "TimeSeries_YoY_results.ipynb"; document.body.appendChild(a); a.click(); a.remove();
+/* download chart PNG */
+downloadChartPng.addEventListener('click', ()=>{
+  if(!chart){ alert("No chart"); return; }
+  try { const url = chart.toBase64Image(); const a = document.createElement('a'); a.href = url; a.download = "combined_yoy_chart.png"; document.body.appendChild(a); a.click(); a.remove(); } catch(e){ alert("Failed to export chart PNG"); }
 });
 
-/* ========= Export CSV from result table ========= */
-btnExportCsv.addEventListener('click', ()=>{
-  if(resultTbody.children.length===0){ alert('No results to export'); return; }
-  const rows=[['Period','Value','Diff','Pct']];
-  resultTbody.querySelectorAll('tr').forEach(tr=>{
-    const tds = tr.querySelectorAll('td'); rows.push([tds[0].innerText, tds[1].innerText, tds[2].innerText, tds[3].innerText]);
+/* export current table rows */
+exportCsvBtn.addEventListener('click', ()=>{
+  const trs = Array.from(resultTbody.querySelectorAll('tr'));
+  if(!trs.length){ alert('No results to export'); return; }
+  const rows = [['Year','Value','Count','Diff','Pct']];
+  trs.forEach(tr=>{
+    const year = tr.querySelector('.year').innerText.trim();
+    const val = tr.querySelector('.value').innerText.trim();
+    const cnt = tr.querySelector('.count').innerText.trim();
+    const diff = tr.querySelector('.diff').innerText.trim();
+    const pct = tr.querySelector('.pct').innerText.trim();
+    rows.push([year, val, cnt, diff, pct]);
   });
-  const csv = rows.map(r=>r.join(",")).join("\n");
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download="yoy_results.csv"; document.body.appendChild(a); a.click(); a.remove();
+  const csv = rows.map(r=> r.join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = 'yoy_results_export.csv'; document.body.appendChild(a); a.click(); a.remove();
 });
 
-/* ========= Miscellaneous UI actions ========= */
-btnShowYoY.addEventListener('click', ()=>{
-  document.getElementById('yoyPanel').scrollIntoView({behavior:'smooth'});
-});
-
-btnInsertToPlot.addEventListener('click', ()=>{
-  // simple overlay text annotation to Plotly plot indicating YoY summary
-  const summary = notebookPreview.innerText.split("\n").slice(0,6).join("\n");
-  const annotation = { text: summary.replace(/\n/g,"<br>"), xref:'paper', yref:'paper', x:0.02, y:0.98, showarrow:false, bgcolor:'rgba(255,255,255,0.85)', bordercolor:'#eef4ff' };
-  if(plotDataLoaded) Plotly.relayout(plotlyDiv, {'annotations':[annotation]});
-  statusMsg.textContent = "Annotation injected into plot.";
-});
-
-btnExportPlotPng.addEventListener('click', ()=>{
-  if(!plotDataLoaded){ alert('No plot to export'); return; }
-  Plotly.toImage(plotlyDiv, {format:'png',width:1200,height:600}).then(url=>{
-    const a=document.createElement('a'); a.href=url; a.download='plot_snapshot.png'; document.body.appendChild(a); a.click(); a.remove();
+/* Save Table CSV explicit */
+saveTableCsv.addEventListener('click', ()=>{
+  const trs = Array.from(resultTbody.querySelectorAll('tr'));
+  if(!trs.length){ alert('No rows to save'); return; }
+  recalcFromTable();
+  const rows = [['Year','Value','Count','Diff','Pct']];
+  trs.forEach(tr=>{
+    const year = tr.querySelector('.year').innerText.trim();
+    const val = tr.querySelector('.value').innerText.trim();
+    const cnt = tr.querySelector('.count').innerText.trim();
+    const diff = tr.querySelector('.diff').innerText.trim();
+    const pct = tr.querySelector('.pct').innerText.trim();
+    rows.push([year, val, cnt, diff, pct]);
   });
+  const csv = rows.map(r=> r.join(',')).join('\n');
+  const ts = new Date().toISOString().replace(/[:\-]/g,'').split('.')[0];
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = `yoy_results_saved_${ts}.csv`; document.body.appendChild(a); a.click(); a.remove();
 });
-
-btnSaveHtml.addEventListener('click', ()=>{
-  // save current DOM as an HTML file (static snapshot)
-  const html = '<!doctype html>\n' + document.documentElement.outerHTML;
-  const blob = new Blob([html],{type:'text/html'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='report_combined_snapshot.html'; document.body.appendChild(a); a.click(); a.remove();
-});
-
-/* ========= Initialization ========= */
-renderPlotlyDemo();
-renderManual();
-statusMsg.textContent = "Ready — gunakan panel kanan untuk YoY analysis.";
-
-btnGenerate.addEventListener('click', ()=>{ aggregateAndExplain(); });
-
 </script>
 </body>
 </html>
+'@
+
+  Write-FileSafely -Path $combinedPath -Content $combinedContent -Encoding "utf8"
+
+  # -----------------------
+  # Standalone YoY editor - UPDATED: Count editable, Add supports Count, Edit includes Count
+  # -----------------------
+  $htmlYoYPath = Join-Path -Path $HasilDir -ChildPath "yoy_analysis_with_explanation.html"
+  $htmlYoYContent = @'
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>YoY Standalone Editor — Edit / Hapus / Simpan CSV</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{ --bg:#f4f8ff; --muted:#6b7280; --accent:#6366f1 }
+    body{font-family:Inter,Arial;margin:18px;background:linear-gradient(180deg,#f8fbff,#f2f7ff);color:#071032}
+    .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.06);max-width:1100px;margin:0 auto}
+    .row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+    input,select,button{padding:8px;border-radius:8px;border:1px solid #e6edf7}
+    button.primary{background:#6366f1;color:#fff;border:none}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border:1px solid #eef2ff;text-align:left}
+    td.editable{background:#fff7e6}
+    .hint{font-size:13px;color:#6b7280}
+    .small-btn{padding:6px 8px;border-radius:6px}
+    .actions{width:160px;text-align:center}
+    @media(max-width:720px){ .row{flex-direction:column;align-items:stretch} }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>YoY Standalone Editor — Edit / Hapus / Simpan CSV</h2>
+    <p class="hint">Impor CSV (date,value) atau tambahkan data manual (Year, Value, Count). Setelah Generate, Anda dapat mengedit Year/Value/Count/Diff/% inline, menghapus baris, dan mengekspor seluruh tabel ke CSV.</p>
+
+    <div class="row">
+      <label>CSV: <input id="csvFile" type="file" accept=".csv" /></label>
+      <div style="display:flex;gap:8px;margin-left:8px">
+        <input id="yearInput" type="number" placeholder="Year" style="width:110px" />
+        <input id="valueInput" type="number" placeholder="Value" style="width:140px" />
+        <input id="countInput" type="number" placeholder="Count" style="width:100px" min="0" value="1" />
+        <button id="addBtn" class="small-btn">Add</button>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <label>From <input id="fromYear" type="number" value="2019" style="width:100px;margin-left:6px"/></label>
+        <label>To <input id="toYear" type="number" value="2024" style="width:100px;margin-left:6px"/></label>
+        <select id="aggMode" style="margin-left:6px"><option value="avg">AVG</option><option value="sum">SUM</option><option value="last">LAST</option></select>
+        <button id="generateBtn" class="small-btn">Generate</button>
+        <button id="saveCsvBtn" class="small-btn">Save CSV</button>
+        <button id="clearBtn" class="small-btn" style="background:#ef4444;color:#fff">Clear</button>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table id="dataTable"><thead><tr><th>Year</th><th>Value</th><th>Count</th><th>Diff</th><th>%</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div style="margin-top:18px"><canvas id="chart" width="1000" height="360" style="background:#fff;border-radius:6px"></canvas></div>
+  </div>
+
+<script>
+function parseCSV(text){
+  const lines = text.replace(/\r\n/g,"\\n").split("\\n").map(l=>l.trim()).filter(l=>l!=="");
+  if(!lines.length) return [];
+  const first = lines[0].split(",").map(s=>s.trim());
+  const header = first.some(h=>isNaN(parseInt(h,10)));
+  const rows = header ? lines.slice(1) : lines;
+  const out = [];
+  for(const r of rows){
+    const cols = r.split(",").map(c=>c.trim());
+    if(cols.length < 2) continue;
+    const y = parseInt(cols[0],10);
+    const v = cols[1]==='' ? null : parseFloat(cols[1]);
+    const c = cols.length > 2 ? (cols[2]===''?0:parseInt(cols[2],10)) : 1;
+    if(!isNaN(y)) out.push({year:y, value:(v===null||isNaN(v))? null : v, count: isNaN(c)? 0 : c});
+  }
+  return out;
+}
+function fmtNum(v){ return (v===null||v===undefined) ? "-" : Number(v).toLocaleString('en-US',{maximumFractionDigits:2}); }
+
+const csvFile = document.getElementById('csvFile');
+const addBtn = document.getElementById('addBtn');
+const yearInput = document.getElementById('yearInput');
+const valueInput = document.getElementById('valueInput');
+const countInput = document.getElementById('countInput');
+const fromYear = document.getElementById('fromYear');
+const toYear = document.getElementById('toYear');
+const aggMode = document.getElementById('aggMode');
+const generateBtn = document.getElementById('generateBtn');
+const saveCsvBtn = document.getElementById('saveCsvBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+const tbody = document.querySelector('#dataTable tbody');
+const chartEl = document.getElementById('chart');
+let chartInstance = null;
+let tableRows = []; // {year, value, count, diff, pct, manual}
+
+/* CSV import */
+csvFile.addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const r = new FileReader(); r.onload = ()=>{
+    const parsed = parseCSV(r.result);
+    const map = Object.fromEntries(tableRows.map(x=>[x.year, {value:x.value, count:x.count||0}]));
+    parsed.forEach(p=> map[p.year] = { value: p.value, count: p.count });
+    tableRows = Object.keys(map).map(k=>({year:parseInt(k,10), value: map[k].value, count: map[k].count || 0, diff:null, pct:null, manual:false}));
+    tableRows.sort((a,b)=>a.year-b.year);
+    renderTable();
+    recalcStandalone();
+  }; r.readAsText(f);
+});
+
+/* Add manual row (Year, Value, Count) */
+addBtn.addEventListener('click', ()=>{
+  const y = parseInt(yearInput.value,10);
+  const v = valueInput.value === '' ? null : parseFloat(valueInput.value);
+  const c = countInput.value === '' ? 0 : parseInt(countInput.value,10);
+  if(isNaN(y) || (v===null || isNaN(v)) || isNaN(c) || c < 0){ alert('Masukkan Year, Value, dan Count yang valid'); return; }
+  // replace existing year if present
+  tableRows = tableRows.filter(r=> r.year !== y);
+  tableRows.push({year: y, value: v, count: c, diff: null, pct: null, manual: false});
+  tableRows.sort((a,b)=> a.year - b.year);
+  renderTable();
+  recalcStandalone();
+  yearInput.value=''; valueInput.value=''; countInput.value='1';
+});
+
+/* Render table with Edit/Hapus and Count column editable when editing */
+function renderTable(){
+  tbody.innerHTML = '';
+  tableRows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.dataset.year = r.year;
+
+    const tdY = document.createElement('td'); tdY.className='year'; tdY.contentEditable='false'; tdY.innerText = r.year;
+    const tdV = document.createElement('td'); tdV.className='value'; tdV.contentEditable='false'; tdV.innerText = r.value===null? '' : r.value;
+    const tdC = document.createElement('td'); tdC.className='count'; tdC.contentEditable='false'; tdC.innerText = r.count===undefined? '' : String(r.count);
+    const tdCountInfo = tdC;
+    const tdCountHidden = null;
+
+    const tdCnt = tdC;
+    const tdDiff = document.createElement('td'); tdDiff.className='diff'; tdDiff.contentEditable='false'; tdDiff.innerText = r.diff===null? '-' : fmtNum(r.diff);
+    const tdPct = document.createElement('td'); tdPct.className='pct'; tdPct.contentEditable='false'; tdPct.innerText = r.pct===null? '-' : (r.pct.toFixed(2)+'%');
+
+    const tdAksi = document.createElement('td'); tdAksi.className='actions';
+    const editBtn = document.createElement('button'); editBtn.className='small-btn'; editBtn.innerText='Edit';
+    const delBtn = document.createElement('button'); delBtn.className='small-btn'; delBtn.innerText='Hapus'; delBtn.style.marginLeft='6px';
+
+    tdAksi.appendChild(editBtn); tdAksi.appendChild(delBtn);
+
+    // Edit toggle: enables editing Year, Value, Count, Diff, Pct
+    editBtn.addEventListener('click', ()=>{
+      const editing = tr.dataset.editing === 'true';
+      if(!editing){
+        tr.dataset.editing = 'true';
+        tr.dataset.origDiff = tdDiff.innerText;
+        tr.dataset.origPct = tdPct.innerText;
+        tdY.contentEditable='true'; tdV.contentEditable='true'; tdCnt.contentEditable='true'; tdDiff.contentEditable='true'; tdPct.contentEditable='true';
+        editBtn.innerText='Save';
+        tdV.focus();
+      } else {
+        // Save
+        tdY.contentEditable='false'; tdV.contentEditable='false'; tdCnt.contentEditable='false'; tdDiff.contentEditable='false'; tdPct.contentEditable='false';
+        // if diff/pct changed -> mark manual
+        if(tdDiff.innerText.trim() !== (tr.dataset.origDiff || '') || tdPct.innerText.trim() !== (tr.dataset.origPct || '')){
+          tr.dataset.manual = 'true';
+        }
+        delete tr.dataset.editing;
+        editBtn.innerText='Edit';
+        // update tableRows structure based on edited cells
+        const ny = parseInt(tdY.innerText.trim(),10);
+        const nv = tdV.innerText.trim() === '' ? null : parseFloat(tdV.innerText.trim());
+        const nc = tdCnt.innerText.trim() === '' ? 0 : parseInt(tdCnt.innerText.trim(),10);
+        // replace or update row in tableRows
+        tableRows = tableRows.filter(x=> x.year !== r.year && x.year !== ny); // remove old and any same-year duplicates
+        tableRows.push({ year: ny, value: nv, count: isNaN(nc)?0:nc, diff: tdDiff.innerText.trim() === '-' ? null : parseFloat(tdDiff.innerText.replace(/,/g,'')), pct: tdPct.innerText.trim().endsWith('%') ? parseFloat(tdPct.innerText.trim().replace('%','')) : (tdPct.innerText.trim()==='-'?null:parseFloat(tdPct.innerText)), manual: (tr.dataset.manual === 'true')});
+        tableRows.sort((a,b)=> a.year - b.year);
+        renderTable();
+        recalcStandalone();
+      }
+    });
+
+    delBtn.addEventListener('click', ()=>{
+      tableRows = tableRows.filter(x=> x.year !== r.year);
+      renderTable();
+      if(chartInstance) chartInstance.destroy();
+    });
+
+    tdY.addEventListener('blur', ()=> recalcStandalone());
+    tdV.addEventListener('blur', ()=> recalcStandalone());
+    tdCnt.addEventListener('blur', ()=> recalcStandalone());
+
+    tr.appendChild(tdY); tr.appendChild(tdV); tr.appendChild(tdCnt); tr.appendChild(tdDiff); tr.appendChild(tdPct); tr.appendChild(tdAksi);
+    tbody.appendChild(tr);
+  });
+}
+
+/* recalcStandalone: compute diffs/pct from current table rows, skip manual rows */
+function recalcStandalone(){
+  const trs = Array.from(tbody.querySelectorAll('tr'));
+  const rows = trs.map(tr=> {
+    const y = parseInt(tr.querySelector('.year').innerText.trim(),10);
+    const vtxt = tr.querySelector('.value').innerText.trim();
+    const v = vtxt === '' ? null : parseFloat(vtxt);
+    const ctxt = tr.querySelector('.count').innerText.trim();
+    const c = ctxt === '' ? 0 : parseInt(ctxt,10);
+    return { year: y, value: isNaN(v)? null : v, count: isNaN(c)? 0 : c, tr: tr };
+  }).filter(r=> !isNaN(r.year));
+  rows.sort((a,b)=> a.year - b.year);
+
+  // Update underlying tableRows array to reflect edited values and counts
+  tableRows = rows.map(r=> ({ year: r.year, value: r.value, count: r.count, diff: null, pct: null, manual: (r.tr.dataset.manual === 'true') }));
+
+  for(let i=0;i<rows.length;i++){
+    const cur = rows[i], prev = i>0?rows[i-1]:null;
+    const tr = cur.tr;
+    const diffCell = tr.querySelector('.diff');
+    const pctCell = tr.querySelector('.pct');
+    if(prev && cur.value != null && prev.value != null){
+      const diff = cur.value - prev.value;
+      const pct = prev.value !== 0 ? (diff/Math.abs(prev.value))*100 : null;
+      if(tr.dataset.manual !== 'true'){
+        diffCell.innerText = fmtNum(diff);
+        pctCell.innerText = pct===null? '-' : pct.toFixed(2) + '%';
+      }
+    } else {
+      if(tr.dataset.manual !== 'true'){
+        diffCell.innerText = '-';
+        pctCell.innerText = '-';
+      }
+    }
+  }
+  // update chart
+  const labels = tableRows.map(r=> String(r.year));
+  const data = tableRows.map(r=> r.value === null ? NaN : r.value);
+  if(chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(chartEl.getContext('2d'), { type:'line', data:{ labels, datasets:[{ label:'Value', data, borderColor:'rgba(99,102,241,1)', backgroundColor:'rgba(99,102,241,0.12)', fill:true }]}, options:{responsive:true, plugins:{legend:{display:false}}}});
+}
+
+/* Generate: compute results using logic similar to combined compute (but using tableRows header if available) */
+generateBtn.addEventListener('click', ()=>{
+  const from = parseInt(fromYear.value,10); const to = parseInt(toYear.value,10);
+  if(isNaN(from) || isNaN(to) || from>to){ alert('Rentang tahun tidak valid'); return; }
+  const agg = aggMode.value || 'avg';
+  // Build a map from current tableRows (including manual additions)
+  const map = Object.fromEntries(tableRows.map(r=>[r.year, { value: r.value, count: r.count || 0 }]));
+  const results = [];
+  for(let y=from;y<=to;y++){
+    const entry = map[y];
+    let vals = [];
+    let count = 0;
+    if(entry && entry.value != null){
+      if(agg === 'avg'){
+        if(entry.count && entry.count > 0){
+          vals = [entry.value / entry.count];
+          count = entry.count;
+        } else {
+          vals = [entry.value];
+          count = 1;
+        }
+      } else {
+        vals = [entry.value];
+        count = entry.count || 1;
+      }
+    } else {
+      vals = [];
+      count = 0;
+    }
+    let value = null;
+    if(vals.length === 0) value = null;
+    else if(agg==='sum') value = vals.reduce((a,b)=>a+b,0);
+    else if(agg==='last') value = vals[vals.length-1];
+    else value = vals.reduce((a,b)=>a+b,0)/vals.length;
+    results.push({ year: y, value: value, count: count });
+  }
+  for(let i=0;i<results.length;i++){
+    const cur = results[i], prev = i>0?results[i-1]:null;
+    if(prev && cur.value != null && prev.value != null){
+      cur.diff = cur.value - prev.value;
+      cur.pct = prev.value !== 0 ? (cur.diff/Math.abs(prev.value))*100 : null;
+    } else { cur.diff = null; cur.pct = null; }
+  }
+  // set tableRows and render
+  tableRows = results.map(r=>({ year: r.year, value: r.value, count: r.count, diff: r.diff, pct: r.pct, manual: false }));
+  renderTable();
+  recalcStandalone();
+});
+
+/* Save CSV - export current table rows */
+saveCsvBtn.addEventListener('click', ()=>{
+  const trs = Array.from(tbody.querySelectorAll('tr'));
+  if(!trs.length){ alert('No rows to export'); return; }
+  recalcStandalone();
+  const rows = [['Year','Value','Count','Diff','Pct']];
+  trs.forEach(tr=>{
+    const year = tr.querySelector('.year').innerText.trim();
+    const val = tr.querySelector('.value').innerText.trim();
+    const cnt = tr.querySelector('.count').innerText.trim();
+    const diff = tr.querySelector('.diff').innerText.trim();
+    const pct = tr.querySelector('.pct').innerText.trim();
+    rows.push([year, val, cnt, diff, pct]);
+  });
+  const csv = rows.map(r=> r.join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); const ts = new Date().toISOString().replace(/[:\-]/g,'').split('.')[0]; a.download = `yoy_standalone_${ts}.csv`; document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* Clear */
+clearBtn.addEventListener('click', ()=>{ if(confirm('Hapus semua baris?')){ tableRows = []; renderTable(); if(chartInstance) chartInstance.destroy(); } });
+
+renderTable();
+</script>
+</body>
+</html>
+'@
+
+  Write-FileSafely -Path $htmlYoYPath -Content $htmlYoYContent -Encoding "utf8"
+
+  Write-Host "`nAll write operations completed." -ForegroundColor Cyan
+
+  # -----------------------
+  # Optionally run pipeline_run.py now (keep simple python detection)
+  # -----------------------
+  if ($RunNow) {
+    $pythonExe = $null
+    if (Get-Command python -ErrorAction SilentlyContinue) { $pythonExe = "python" }
+    elseif (Get-Command python3 -ErrorAction SilentlyContinue) { $pythonExe = "python3" }
+
+    if (-not $pythonExe) {
+      Write-Host "Python not found in PATH. Skipping execution of pipeline_run.py. You can run it manually with: python `"$pyPath`"" -ForegroundColor Yellow
+    } else {
+      Write-Host "Running pipeline_run.py with $pythonExe ..." -ForegroundColor Green
+      $proc = Start-Process -FilePath $pythonExe -ArgumentList ("`"$pyPath`"") -WorkingDirectory $HasilDir -NoNewWindow -PassThru -Wait
+      if ($proc.ExitCode -ne 0) {
+        Write-Host "pipeline_run.py exited with code $($proc.ExitCode)" -ForegroundColor Red
+      } else {
+        Write-Host "pipeline_run.py finished (exit code 0)" -ForegroundColor Cyan
+      }
+    }
+  } else {
+    Write-Host "RunNow = false; files written but pipeline not executed." -ForegroundColor Yellow
+    Write-Host "Open the combined report via local HTTP server for best behavior:"
+    Write-Host "  cd `"$($HasilDir)/notebooks_html`""
+    Write-Host "  python -m http.server 8000"
+    Write-Host "Then open http://localhost:8000/report_combined_yoy_and_notebook.html"
+    Write-Host "Standalone YoY editor file:"
+    Write-Host "  $htmlYoYPath"
+  }
+
+} catch {
+  Write-Host "Script failed: $_" -ForegroundColor Red
+  if ($_.Exception -ne $null) { Write-Host $_.Exception.Message -ForegroundColor Red }
+}
 ```
-
----
-
-Catatan singkat:
-- Saya sudah menambahkan seluruh file HTML gabungan ke dalam runme.md ini sebagai block yang dapat Anda salin ke file `notebooks_html/report_combined_yoy_and_notebook.html`.
-- Jika Anda ingin, saya juga dapat menambahkan perintah PowerShell (Set-Content) ke skrip `run_pipeline_complete_with_ui.ps1` agar file ini ditulis otomatis ke `notebooks_html` ketika skrip dijalankan. Saya dapat buatkan patch dan menyisipkannya ke skrip yang ada.
